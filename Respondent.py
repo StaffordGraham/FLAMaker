@@ -1,0 +1,15 @@
+class Respondent:
+  def __init__(self, party):
+        self.party = party
+        self.first_name=""
+        self.last_name=""
+        self.dob_DD=0
+        self.dob_MM=0
+        self.dob_YYYY=0
+        self.address_building_and_street=""
+        self.address_second_line=""
+        self.address_town_or_city=""
+        self.address_postcode=""
+        self.phone =""
+        self.email=""
+        self.live_with_you=False

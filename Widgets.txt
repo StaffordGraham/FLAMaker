@@ -1,0 +1,53 @@
+CHECK BOX
+        checkbox_var = tk.IntVar()
+        checkbox = tk.Checkbutton(self.input_frame, text="Check me!", variable=checkbox_var)
+		checkbox.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+        checkbox.grid(row=self.row_no, column=0, padx=10, pady=10,sticky='w')
+        self.row_no+=1
+
+CHECKBOX USING FOR LOOP TO LAY OUT AND GATHER date_pattern
+        self.checked_items=[]
+        self.checkbox_texts=[
+            "Legal Aid",
+            "Remote Hearing",
+            "Covid",
+            "Prohibition of Cross-Examination",
+            ]
+        self.checkbox_vars=[]
+        self.row_no=0
+
+        for text in self.checkbox_texts:
+            check_var=tk.IntVar()
+            self.checkbox_vars.append(check_var)
+            chkbutton=tk.Checkbutton(self.input_frame,text=text,variable=check_var)
+            chkbutton.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+            chkbutton.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')  
+            self.row_no+=1
+
+    def update(self):
+              
+            
+        for text,var in zip(self.checkbox_texts,self.checkbox_vars):
+           
+            if var.get()==1:
+                case_details.recitals.append(text)
+
+DATETIMEPICKER
+        now=datetime.now()
+        label_date = tk.Label(self.input_frame, text="Date", bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR, font=("Helvetica", 16))
+        label_date.grid(row=self.row_no, column=0, padx=5, pady=5, sticky='w')
+        cal = DateEntry(self.input_frame, width=12, year=now.year, month=now.month, day=now.day,
+
+		bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font =("Helvetica",10),
+        date_pattern='dd/mm/yyyy')
+ 
+        cal.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
+        self.row_no+=1
+
+UPDATE FUNCTIONS
+hearing_date_string= self.cal.get()
+        hearing_date_object = datetime.strptime(hearing_date_string, '%d-%m-%Y').date()
+        case_details.hearing_date_object=hearing_date_object
+
+NEXT AND BACK BUTTONS
+

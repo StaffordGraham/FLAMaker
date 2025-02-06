@@ -1,0 +1,56 @@
+class Recitals(BasePage,tk.Frame):
+    def __init__(self,parent,controller):
+        super().__init__(controller)
+        tk.Frame.__init__(self,parent)
+        self.config(bg=BACKGROUND_COLOUR)
+        self.grid(sticky='nsew')
+        self.grid_columnconfigure(0,weight=1)
+        self.row_no=0
+		
+        #RECITALS THE FRAME SHOWING THE PAGE TITLE
+        self.row_no +=1
+        self.top_frame=tk.Frame(self,bg='lightblue')
+        self.top_frame.grid(row=0,column=0,sticky='ew')
+        page_title=tk.Label(self.top_frame,text="Page Name",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.top_frame.grid_columnconfigure(0,weight=1)  
+        page_title.grid(row=self.row_no,column=0,sticky='ew')
+        
+        #RECITALS:THE FRAME CONTAINING THE INPUT WIDGETS       
+        self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
+        self.input_frame.grid(row=self.row_no,column=0,sticky='nsew')
+        self.input_frame.grid_columnconfigure(0,weight=1)
+        
+		
+		
+        self.input_frame.grid_columnconfigure(0, weight=0)
+        self.input_frame.grid_columnconfigure(1, weight=0)
+        self.input_frame.grid_columnconfigure(2, weight=0)
+        self.input_frame.grid_columnconfigure(3,weight=0)
+        self.grid_columnconfigure(5,weight=0)
+        
+         #THE FRAME FOR THE NEXT AND BACK BUTTONS WITH RELATED FUNCTION
+        
+        self.bottom_frame=tk.Frame(self,bg=BACKGROUND_COLOUR,height=50)
+        self.bottom_frame.place(relx=0.5,rely=1.0,anchor='s',y=-20)
+        self.bind("<Configure>", self.update_bottom_frame_width)  # Bind resize event
+        #self.update_bottom_frame_width()
+       
+
+        back_button=tk.Button(self.bottom_frame,text="Back",command=self.back_step)
+        next_button =tk.Button(self.bottom_frame, text="Next",command=self.front_step)
+        back_button.grid(row=1,column=0,padx=10,pady=(0,10),sticky='w')
+        next_button.grid(row=1,column=1,padx=10,pady=(0,10), sticky='e')
+        self.bottom_frame.grid_columnconfigure(0,weight =1)
+        self.bottom_frame.grid_columnconfigure(1,weight=1)
+        
+
+    def back_step(self):
+        self.controller.last_page()
+        
+    def front_step(self):
+        self.controller.next_page()
+        
+    def update_bottom_frame_width(self,event=None):
+       self.bottom_frame.place_configure(width=self.winfo_width())
+       
+        

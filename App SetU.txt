@@ -1,0 +1,106 @@
+import tkinter as tk
+from tkinter import ttk
+from tkcalendar import Calendar
+from Person import Person
+from CaseDetails import CaseDetails
+from datetime import datetime
+from tkcalendar import DateEntry
+
+
+from PyQt5.QtWidgets import QApplication, QMainWindow, QCalendarWidget, QPushButton, QVBoxLayout, QWidget
+import sys
+case_details=CaseDetails
+applicant =Person
+respondent = Person
+
+
+
+from tkcalendar import DateEntry
+
+
+BACKGROUND_COLOUR="#FFFFCC"
+FOREGROUND_COLOUR="#0000FF"
+theFont=("Helvetica", 12)
+bigFont=("Helvetica", 24)
+
+applications =["Final Order","Interim Order","Interim Order and Directions","Directions",]
+titles =["Mr","Mrs","Miss","Ms"]
+children =[]
+genders=["Male","Female"]
+
+class BasePage:
+    def __init__(self,controller):
+        self.controller=controller
+         
+    def next_page(self):
+        if self.controller.current_page_index+1<len(self.pages):
+            self.controller.current_page_index +=1
+            print(self.controller.current_page_index)
+            self.controller.show_frame(self.pages[self.current_page_index].__name__)
+            
+    def last_page(self):
+        if self.controller.current_page_index >0:
+            self.controller.current_page_index-=1
+            self.controller.show_frame(self.controller.pages[self.controller.current_page_index].__name__)
+
+
+
+class MultiPage(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        style=ttk.Style()
+        style.theme_use('winnative')
+        self.pages=[Case]
+        self.case_details =CaseDetails()
+        self.title("FlAgpole")
+        self.geometry("880x550")
+        self.container=ttk.Frame(self)
+        self.container.pack(fill='both',expand=True)
+        self.pages=[Case,Hearing,Applicant,Respondent,Children,Recitals,Undertakings,OccOrders,Duration]
+        self.current_page_index=0
+
+
+        self.frames={}
+        
+        for F in self.pages:
+            page_name=F.__name__
+            if F==Case:
+                #frame=F(parent=self.container,controller=self,case_details=self.case_info)
+                frame=F(parent=self.container,controller=self)
+
+                
+            else:
+                frame = F(parent=self.container, controller=self,case_details=case_details)  
+
+            self.frames[page_name] = frame
+            frame.grid(row=0, column=0, sticky='nsew')  # Ensure frame can expand   
+            
+        self.container.grid_rowconfigure(0, weight=1)  # Allow the first row to expand
+        self.container.grid_columnconfigure(0, weight=1)  # Allow the first column to expand
+        self.show_frame(self.pages[self.current_page_index].__name__)  # This displays the initial frame
+        frame=self.frames[page_name]
+        
+    def show_frame(self, page_name):
+		# Show the frame for the given page name
+     frame = self.frames[page_name]
+     frame.tkraise()  # Bring the frame to the front
+     
+    def next_page(self):
+        if self.current_page_index+1<len(self.pages):
+            self.current_page_index +=1
+            temp_var = self.current_page_index
+            temp_var2=self.pages[self.current_page_index]
+            self.show_frame(self.pages[self.current_page_index].__name__)
+            
+    def last_page(self):
+        t= self.current_page_index
+        if self.current_page_index >0:
+            self.current_page_index-=1
+            t=self.current_page_index
+            self.show_frame(self.pages[self.current_page_index].__name__)
+            
+if __name__ =="__main__":
+         
+            app = MultiPage()
+            app.geometry("800x600")
+            app.mainloop()
