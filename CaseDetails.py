@@ -26,22 +26,21 @@ class CaseDetails:
             
             self._initialized =True
             self.children =[]
-            self.relationship=0
+            self.relationship='Marriage'
             self.court_name = 0
             self.case_name=""
-            self.judge_name = ""
-            self.judge_rank=0
+            self.judge_name = "Campbell"
+            self.judge_rank="Deputy District Judge"
+            self.judge_gender="Male"
             self.case_number =""
             self.hearing_date=""
             self.hearing_date_object=datetime.now()
-            self.listed_for=0
-            self.application=0
+            self.listed_for="Interim Hearing"
+            self.application="Occupation Order"
             self.para_numbers=[]
             self.consent_order =False
-            self._notice_index=0
-            self._notice_string=''
-            self.reasons=0
-            self.listed_for=0
+            self.notice="On Notice"
+            self.reasons="Urgency"
             self.judge_and_hearing=""
             self.applicant = Person('Applicant')
             self.app_rep=Person("Applicant's Representative")
@@ -63,7 +62,7 @@ class CaseDetails:
             
     def reset(self):
         self.children =[]
-        self.relationship=""
+        self.relationship="Marriage"
         self.court_name = 0
         self.case_name=""
         self.judge_name = ""

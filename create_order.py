@@ -54,7 +54,7 @@ def write_order(case_details):
         pprun=paragraph.add_run(appo)
         pprun.bold=True
         pparagraph=doc.add_paragraph()
-        pprun=pparagraph.add_run("Family Law Act 1997")
+        pprun=pparagraph.add_run("Family Law Act 1996")
         pprun.bold=True
         paragraph=doc.add_paragraph()
         
@@ -63,13 +63,15 @@ def write_order(case_details):
         line_paragrap.add_run('_'*100)
         #TABLE FOR CHILDREN
         kidno =len(case_details.children)
-        if kidno>1:
-            label_children="The full names of the children"
-            label_date="Dates of Birth"
-        else:
-            label_children="The full name of the child"
-            label_date="Date of Birth"
         
+        if kidno>0:
+            
+            if kidno>1:
+                label_children="The full names of the children"
+                label_date="Dates of Birth"
+            else:
+                label_children="The full name of the child"
+                label_date="Date of Birth"
         child_table=doc.add_table(rows=kidno+1,cols=3)
         child_table.columns[0].width=Cm(20)
         child_table.columns[1].width=Cm(3)
@@ -102,7 +104,7 @@ def write_order(case_details):
         warning_text.append(f"{case_details.respondent.address_town_or_city.upper()} ")
         warning_text.append(f"{case_details.respondent.address_postcode.upper()}.\n")
         warning_text.append("YOU MUST OBEY THIS ORDER. You should read it carefully .If you do not understand anything in this order you should go to a solicitor, Legal Advice Centre or Citizens Advice Bureau. You have the right to apply to the court to change or cancel the order.\n")
-        warning_text.append("WARNING: ALTERNATIVELY, IF YOU DISOBEY THIS ORDER, YOU MAY BE HELD TO BE IN CONTEMPT OF COURT AND MAY BE IMPRISONED, FINED, OR HAVE YOUR ASSETS SEIZED")
+        warning_text.append("WARNING: IF YOU DISOBEY THIS ORDER, YOU MAY BE HELD TO BE IN CONTEMPT OF COURT AND MAY BE IMPRISONED, FINED, OR HAVE YOUR ASSETS SEIZED")
         final_warning_text=' '.join(warning_text) 
         
         
@@ -126,13 +128,21 @@ def write_order(case_details):
         if case_details.judge_name:
             judge_date_hearing_type.append(case_details.judge_name)
           
-        if case_details.hearing_date:
-            judge_date_hearing_type.append(' in private on')        
-            judge_date_hearing_type.append(case_details.hearing_date)
+        if case_details.hearing_date_object:
+            judge_date_hearing_type.append(' in private on ')
+            the_hearing_date=case_details.hearing_date_object.strftime("%d %B %Y")      
+            judge_date_hearing_type.append(the_hearing_date)
             
         if case_details.listed_for:
             judge_date_hearing_type.append(' at')
-            judge_date_hearing_type.append(article(case_details.listed_for))
+            lfor =case_details.listed_for
+            lfor=lfor.lower()
+            artic= article(case_details.listed_for)
+            judge_date_hearing_type.append(artic+' '+lfor)
+            
+       
+            
+            
         
         judge_date_hearing_type.append('.')
         judge_and_hearing=" ".join(judge_date_hearing_type)
@@ -161,7 +171,7 @@ def write_order(case_details):
         parties_cell=parties_table.cell(0,1)
         parties_cell_para=parties_cell.add_paragraph()
         run=parties_cell_para.add_run(the_parties_defs)
-        parties_cell_para.alignment = 0  # Left-aligned
+        parties_cell_para.alignment =0 # Left-aligned
                
          #DEFINITIONS - CHILDREN
         definitions_table=doc.add_table(rows=2,cols=2)
@@ -182,7 +192,7 @@ def write_order(case_details):
         
         
         starting_char='a'
-        for index, child_info in enumerate(case_details.children):
+        for index, child in enumerate(case_details.children):
             sentence=child.sentence
             
             prefix =chr(ord(starting_char)+index)
@@ -242,7 +252,8 @@ def write_order(case_details):
             end_run =end.add_run(judge)
             doc.add_paragraph()
             date_end=doc.add_paragraph()
-            run_date_end=date_end.add_run(case_details.hearing_date)
+            the_end_date=case_details.hearing_date_object.strftime("%d %B %Y")
+            run_date_end=date_end.add_run(the_end_date)
 
 
       

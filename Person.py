@@ -4,9 +4,10 @@ from datetime import datetime
 class Person:
     def __init__(self, party):
         self.party = party
-        self.title=0
+        self.title=""
         self.first_name = ""
         self.last_name = ""
+        self.full_name=""
         self.gender = 0
         self.date_of_birth = None
         self.full_date_of_birth=''
@@ -33,6 +34,7 @@ class Person:
         self.nominative=""
         self.accusative=""
         self.possessive=""
+        
         
 
     
@@ -87,10 +89,7 @@ class Person:
             self.accusative='her'
             self.possessive='her'
             
-    @property
-    def full_name(self):
-        
-        return f"{self.title} {self.first_name} {self.last_name}"
+    
     
     def set_family_home(self):
         full_address = f" {self.address_building_and_street}, {self.address_second_line}, {self.address_town_or_city}, {self.address_postcode}"
@@ -103,7 +102,7 @@ class Child:
     def __init__(self,name1,name2,gender,birthday_object):
         self.first_name = name1
         self.last_name = name2
-        self.full_name=name1 + " "+name2
+        self.full_name=name1 =""
         self.gender = gender
         self.date_of_birth = None
         self.full_date_of_birth=''

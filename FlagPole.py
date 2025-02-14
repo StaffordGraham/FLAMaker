@@ -22,6 +22,7 @@ import json
 import Lists_Dictionaries
 from Lists_Dictionaries import titles,kid_genders,days,months,years,notice_values
 import create_order
+import pprint
 
 import sys
 case_details=CaseDetails()
@@ -77,6 +78,7 @@ class MultiPage(tk.Tk):
         self.container=ttk.Frame(self)
         self.container.pack(fill='both',expand=True)
         self.pages=[Start,Case,Hearing,Applicant,Respondent,Children,Recitals,Undertakings,OccOrders,NonMols,Duration,Actions]
+        tempo='tempo'
         self.current_page_index=0
 
 
@@ -123,15 +125,14 @@ class MultiPage(tk.Tk):
             break
             
     def last_page(self):
-        t= self.current_page_index
-        while self.current_page_index >0:
+        if self.current_page_index !=0:
+            t= self.current_page_index
             self.current_page_index-=1
             t=self.current_page_index
-            next_page=self.pages[self.current_page_index]
-            if next_page.__name__=='Undertakings' and case_details.notice !='On Notice':
-                        continue
-            self.show_frame(self.pages[self.current_page_index].__name__)
-            break
+            next_page=self.pages[self.current_page_index].__name__
+                #self.show_frame(self.pages[self.current_page_index].__name__)
+            self.show_frame(next_page)
+            
         
     def fill_widgets(self):
         pass
@@ -278,7 +279,7 @@ class Case (BasePage,tk.Frame):
         
         
         #THE COURT
-        court_options = ["Brighton", "Medway","Hastings", "Horsham", "Worthing", "Guildford", "Reigate", "Kingston"]
+        court_options = ["Brighton", "Medway","Hastings", "Horsham", "Worthing", "Guildford", "Croydon", "Kingston"]
         label_court = tk.Label(self, text="Court:", font=theFont,anchor='e',width =15)
         label_court.config(bg=BACKGROUND_COLOUR, fg=FOREGROUND_COLOUR)
         label_court.grid(row=self.row_no, column=0, padx=(10), pady=10, sticky='e')
@@ -293,9 +294,9 @@ class Case (BasePage,tk.Frame):
         
         #The CASE NAME
         label_case_name=tk.Label(self,text="Case Name",font=theFont,anchor='e')
-        label_case_name.config(bg=BACKGROUND_COLOUR, fg=FOREGROUND_COLOUR)
+        label_case_name.config(bg="white", fg=FOREGROUND_COLOUR)
         label_case_name.grid(row=self.row_no,column=0,padx=0,pady=10,sticky='e')
-        self.entry_case_name=tk.Entry(self,background="white",fg="green")
+        self.entry_case_name=tk.Entry(self,background="white",fg=FOREGROUND_COLOUR)
         self.entry_case_name.grid(row=self.row_no,column=1,padx=(10),pady=(10),sticky='w')
         
 
@@ -341,7 +342,9 @@ class Case (BasePage,tk.Frame):
         self.combo_judge_rank= ttk.Combobox(self, values=judge_options,style='Custom.TCombobox')
         self.combo_judge_rank.set("Deputy District Judge")
         self.combo_judge_rank.grid(row=self.row_no,column=1,padx=10,pady=(10),sticky='w')
+        
         self.row_no +=1
+                
 
         #THE JUDGE NAME
         self.label_judge_name =tk.Label(self,text="Judge Name",anchor='e',font=theFont)
@@ -351,6 +354,13 @@ class Case (BasePage,tk.Frame):
         self.entry_judge_name.config(background="White",fg=FOREGROUND_COLOUR)
         self.entry_judge_name.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
         self.row_no +=1
+        
+        #THE JUDGE GENDER
+        label_judge_gender=tk.Label(self, text="Judge Gender",font=theFont)
+        label_judge_gender.config(bg=BACKGROUND_COLOUR, fg=FOREGROUND_COLOUR)
+        label_judge_gender.grid(row=self.row_no,column=0,padx=(10,10),pady=10,sticky='w')
+        self.combo_judge_gender=ttk.Combobox(self,values =('Male','Female'),style='Custom.TCombobox')
+        self.combo_judge_gender.grid(row=self.row_no,column=1,padx=(10,10),pady=10,sticky='w')
         
         
         
@@ -375,8 +385,10 @@ class Case (BasePage,tk.Frame):
         self.bottom_frame.grid_columnconfigure(0,weight =1)
         self.bottom_frame.grid_columnconfigure(1,weight=1)
         self.fill_widgets()
-        
-            
+    def on_show(self):
+        self.combo_judge_rank=case_details.judge_rank
+        self.entry_judge_name.set(case_details.judge_name)
+        self.combo_judge_gender=case_details.judge_gender
         
     def update_bottom_frame_width(self,event=None):
        self.bottom_frame.place_configure(width=self.winfo_width())
@@ -393,6 +405,9 @@ class Case (BasePage,tk.Frame):
         case_details.judge_name=self.entry_judge_name.get()
         case_details.relationship=self.relat_combo.get()
         case_details.application=self.combo_application.get()
+        case_details.judge_rank=self.combo_judge_rank.get()
+        case_details.judge_gender=self.combo_judge_gender.get()
+            
 
         
         
@@ -421,17 +436,113 @@ class Case (BasePage,tk.Frame):
             self.entry_judge_name.insert(0,'Campbell')
             
     def on_show(self):
-            p=case_details.application
-            self.combo_application.current(case_details.application)
-            self.combo_court_name.current(case_details.court_name)
+            if case_details.application ==0:
+                self.combo_application.set(self.combo_application['values'][0])
+            else:
+                self.combo_application.set(case_details.application)
+                
+            if case_details.court_name==0:
+                self.combo_court_name.set(self.combo_court_name['values'][0])
+            else:
+                self.combo_court_name.set(case_details.court_name)
+                
             self.entry_case_name.delete(0,'end')
             self.entry_case_name.insert(0,case_details.case_name)
             self.entry_case_number.delete(0,'end')
             self.entry_case_number.insert(0,case_details.case_number)
-            self.relat_combo.current(case_details.relationship)
-            self.combo_judge_rank.current(case_details.judge_rank)
+            
+            self.relat_combo.set(case_details.relationship)
+            self.combo_judge_rank.set(case_details.judge_rank)
             self.entry_judge_name.delete(0,'end')
             self.entry_judge_name.insert(0,case_details.judge_name)
+            self.combo_judge_gender.set(case_details.judge_gender)
+            
+            
+class Property (BasePage,tk.Frame):
+    def __init__(self,parent,controller,case_details):
+        super().__init__(parent,controller,case_details)
+        tk.Frame.__init__(self,parent)
+        self.case_details=case_details
+        self.controller=controller
+        self.config(bg=BACKGROUND_COLOUR)    
+        self.grid_columnconfigure(0,weight=1)
+        self.widgets_list=[]
+        self.row_no=1
+		
+#TITLE Frame
+        self.top_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
+        self.top_frame.grid(row=0,column=0,sticky='ew')
+        page_title=tk.Label(self.top_frame,text="The Property ",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.top_frame.grid_columnconfigure(0,weight=1)
+        page_title.grid(row=self.row_no,column=0, padx=0,pady=10,sticky='ew')
+		
+#WIDGET Frame
+	
+        self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
+        self.input_frame.grid(row=1,column=0,sticky='w')
+        self.input_frame.grid_columnconfigure(0,weight=0)
+        
+        self.add1_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
+        self.row_no+=1
+        self.add2_label=tk.Label(self.input_frame,text="Address 2", font=("Helvetica",12))
+        self.add2_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.add2_entry =tk.Entry(self.input_frame,background="white",fg=FOREGROUND_COLOUR)
+        self.applicant_widgets.append(self.add2_entry)
+        self.add2_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
+        self.add2_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
+        self.row_no+=1
+        #Town/City
+        town_label=tk.Label(self.input_frame,text="Town/City", font=("Helvetica",12))
+        town_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.town_entry =tk.Entry(self.input_frame,background="white",fg=FOREGROUND_COLOUR)
+        self.applicant_widgets.append(self.town_entry)
+        town_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
+        self.town_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
+        self.row_no+=1
+        
+        #PostCode
+        postcode_label=tk.Label(self.input_frame,text="Post Code", font=("Helvetica",12))
+        postcode_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.postcode_entry =tk.Entry(self.input_frame,background="white",fg=FOREGROUND_COLOUR)
+        self.applicant_widgets.append(self.postcode_entry)
+        postcode_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
+        self.postcode_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
+        self.check_var=tk.IntVar()
+
+
+#NEXT AND BACK BUTTON Frame
+
+        self.bottom_frame=tk.Frame(self,bg=BACKGROUND_COLOUR,height=50)
+        self.bottom_frame.place(relx=0.5,rely=1.0,anchor='s',y=-20)
+        self.bind("<Configure>", self.update_bottom_frame_width)  # Bind resize event
+
+        back_button=tk.Button(self.bottom_frame,text="Back",command=self.back_step)
+        next_button =tk.Button(self.bottom_frame, text="Next",command=self.front_step)
+        back_button.grid(row=1,column=0,padx=10,pady=(0,10),sticky='w')
+        next_button.grid(row=1,column=1,padx=10,pady=(0,10), sticky='e')
+        self.bottom_frame.grid_columnconfigure(0,weight =1)
+        self.bottom_frame.grid_columnconfigure(1,weight=1)
+
+#FUNCTIONS
+
+    def update_bottom_frame_width(self,event=None):
+            self.bottom_frame.place_configure(width=self.winfo_width())
+        
+
+    def on_show(self):
+            pass
+
+    def update(self):
+            pass
+
+    def back_step(self):
+            self.update(self)
+            self.controller.last_page()
+
+    def front_step(self):
+        self.update(self)
+        self.controller.next_page()
+
             
 
         
@@ -474,20 +585,16 @@ class Applicant(BasePage,tk.Frame):
        
         self.row_no+=1
        
-       
-
-        
-        
-        
-        
-        
+               
         
         self.row_no+=1
         label_title =tk.Label(self.input_frame,text="Title",font=("Helvetica",12))
         label_title.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         label_title.grid(row=self.row_no, column=0, padx=(10), pady=10, sticky='w')
         self.combo_title=ttk.Combobox(self.input_frame,values=["Mr","Miss","Mrs","Ms"],style="Custom.TCombobox")
+        self.combo_title.set('Ms')
         self.combo_title.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='e')
+        
         self.row_no +=1
         
         first_name_label=tk.Label(self.input_frame,text="First Name",font=("Helvetica",12))
@@ -508,6 +615,7 @@ class Applicant(BasePage,tk.Frame):
         gender_label=tk.Label(self.input_frame,text="Gender",font=('Helvetica',12))
         gender_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         self.gender_combo=ttk.Combobox(self.input_frame,values=["Male","Female"],style="Custom.TCombobox")
+        self.gender_combo.set('Female')
         self.applicant_widgets.append(self.gender_combo)
         gender_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
         self.gender_combo.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
@@ -597,21 +705,26 @@ class Applicant(BasePage,tk.Frame):
         self.bottom_frame.grid_columnconfigure(1,weight=1)
         
     def on_show(self):
-       self.combo_title.current(case_details.applicant.title)
-       self.first_name_entry.delete(0,'end')
-       self.first_name_entry.insert(0,case_details.applicant.first_name)
-       self.surname_entry.delete(0,'end')
-       self.surname_entry.insert(0,case_details.applicant.last_name)
-       self.gender_combo.current(case_details.applicant.gender)
+        if case_details.applicant.title=='':
+            self.combo_title.set('Ms')
+            self.gender_combo.set('Female')
+        else:
+            self.combo_title.set(case_details.applicant.title)
+            self.gender_combo.set(case_details.applicant.gender)
+            
+        self.first_name_entry.delete(0,'end')
+        self.first_name_entry.insert(0,case_details.applicant.first_name)
+        self.surname_entry.delete(0,'end')
+        self.surname_entry.insert(0,case_details.applicant.last_name)
        #self.dob.set_date
-       self.add1_entry.delete(0,'end')
-       self.add1_entry.insert(0,case_details.applicant.address_building_and_street)
-       self.add2_entry.delete(0,'end')
-       self.add2_entry.insert(0,case_details.applicant.address_second_line)
-       self.town_entry.delete(0,'end')
-       self.town_entry.insert(0,case_details.applicant.address_town_or_city)
-       self.postcode_entry.delete(0,'end')
-       self.postcode_entry.insert(0,case_details.applicant.address_postcode)
+        self.add1_entry.delete(0,'end')
+        self.add1_entry.insert(0,case_details.applicant.address_building_and_street)
+        self.add2_entry.delete(0,'end')
+        self.add2_entry.insert(0,case_details.applicant.address_second_line)
+        self.town_entry.delete(0,'end')
+        self.town_entry.insert(0,case_details.applicant.address_town_or_city)
+        self.postcode_entry.delete(0,'end')
+        self.postcode_entry.insert(0,case_details.applicant.address_postcode)
        
        
        
@@ -643,6 +756,7 @@ class Applicant(BasePage,tk.Frame):
         
     def last_action(self):
             self.update(self.controller)
+            tempo='tempo'
             self.controller.last_page()
             
     def next_action(self):
@@ -652,10 +766,16 @@ class Applicant(BasePage,tk.Frame):
         
         
     def update(self,controller):
-        case_details.applicant.title=self.combo_title.current()
-        case_details.applicant.first_name=self.first_name_entry.get()
-        case_details.applicant.last_name=self.surname_entry.get()
-        case_details.applicant.gender=self.gender_combo.current()
+        case_details.applicant.title=self.combo_title.get()
+        name1=self.first_name_entry.get()
+        name2=self.surname_entry.get()
+        full_name=f"{name1} {name2}"
+        case_details.applicant.first_name=name1
+        case_details.applicant.last_name=name2
+        case_details.applicant.full_name=full_name
+        
+        case_details.applicant.full_name=case_details.applicant.first_name +" "+case_details.applicant.last_name
+        case_details.applicant.gender=self.gender_combo.get()
         case_details.applicant.dob=self.dob.get()
         case_details.applicant.address_building_and_street=self.add1_entry.get()
         case_details.applicant.address_second_line=self.add2_entry.get()
@@ -825,13 +945,17 @@ class Respondent(BasePage,tk.Frame):
        
        
     def on_show(self):
-        self.combo_title.current(case_details.respondent.title)
+        if case_details.respondent.title=="":
+            self.combo_title.set('Mr')
+            self.gender_combo.set('Male')
+        else:
+            self.combo_title.set(case_details.respondent.title)
+            self.gender_combo.set(case_details.respondent.gender)
+        
         self.first_name_entry.delete(0,'end')
         self.first_name_entry.insert(0,case_details.respondent.first_name)
         self.surname_entry.delete(0,'end')
         self.surname_entry.insert(0,case_details.respondent.last_name)
-        self.gender_combo.current(case_details.applicant.gender)
-       #self.dob.set_date
         self.add1_entry.delete(0,'end')
         self.add1_entry.insert(0,case_details.respondent.address_building_and_street)
         self.add2_entry.delete(0,'end')
@@ -872,7 +996,7 @@ class Respondent(BasePage,tk.Frame):
         
     def update(self,controller):
        
-        case_details.respondent.title=self.combo_title.current()
+        case_details.respondent.title=self.combo_title.get()
         case_details.respondent.first_name=self.first_name_entry.get() 
         case_details.respondent.last_name=self.surname_entry.get()
         case_details.respondent.gender=self.gender_combo.get()
@@ -904,7 +1028,7 @@ class Hearing(BasePage,tk.Frame):
         
         
         notices=['On Notice','Without Notice','On Short Notice']
-        self.reasons=["","urgency","risk of harm","welfare of children","frustrate order"]
+        self.reasons=["","Urgency","Risk of harm","welfare of children","Frustrate order"]
         
 		
 		#THE FRAME SHOWING THE PAGE TITLE
@@ -1017,6 +1141,8 @@ class Hearing(BasePage,tk.Frame):
         self.entry_resp_repN2 =tk.Entry(self,font=("Helvetica, 16"),width=10)
         self.entry_resp_repN2.grid(row=self.row_no,column=3,padx=0,pady=(10))
         self.row_no+=1
+        self.bind("<Double-1>",self.on_double_click)
+
         
         self.input_frame.grid_columnconfigure(0,weight=0)
         self.input_frame.grid_columnconfigure(1,weight=0)
@@ -1054,17 +1180,33 @@ class Hearing(BasePage,tk.Frame):
             self.combo_reasons.config(state='disabled')
             
 
+    def on_double_click(self,event):
+       self.entry_app_repN1.delete(0,tk.END)
+       self.entry_app_repN1.insert(0,'Charles')
+       self.entry_app_repN2.delete(0,tk.END)
+       self.entry_app_repN2.insert(0,'Wide')
+       
+       self.entry_resp_repN1.delete(0,tk.END)
+       self.entry_resp_repN1.insert(0,'Simon')
+       self.entry_resp_repN2.delete(0,tk.END)
+       self.entry_resp_repN2.insert(0,'Slim')
+       self.combo_app_rep_title.current(0)
+       self.combo_resp_rep_title.current(0)
+       
+        
+        
+        
     def on_show(self):
         self.cal.set_date(case_details.hearing_date_object)
-        self.comb_listed_for.current(case_details.listed_for)
-        self.combo_notice.current(case_details.notice_index)
-        self.combo_reasons.current(case_details.reasons)
-        self.combo_app_rep_title.current(case_details.app_rep.title)
+        self.comb_listed_for.set(case_details.listed_for)
+        self.combo_notice.set(case_details.notice)
+        self.combo_reasons.set(case_details.reasons)
+        self.combo_app_rep_title.set(case_details.app_rep.title)
         self.entry_app_repN1.delete(0,'end')
         self.entry_app_repN1.insert(0,case_details.app_rep.first_name)  
         self.entry_app_repN2.delete(0,'end')
         self.entry_app_repN2.insert(0,case_details.app_rep.last_name)
-        self.combo_resp_rep_title.current(case_details.resp_rep.title)
+        self.combo_resp_rep_title.set(case_details.resp_rep.title)
         self.entry_resp_repN1.delete(0,'end')
         self.entry_resp_repN1.insert(0,case_details.resp_rep.first_name)
         self.entry_resp_repN2.delete(0,'end')
@@ -1089,16 +1231,17 @@ class Hearing(BasePage,tk.Frame):
         l_for =self.comb_listed_for.current()
         case_details.notice=self.combo_notice.get()
         case_details.consent=self.consent_var.get()
-        case_details.app_rep.title =self.combo_app_rep_title.current()
+        case_details.app_rep.title =self.combo_app_rep_title.get()
         case_details.app_rep.first_name=self.entry_app_repN1.get()
         case_details.app_rep.last_name= self.entry_app_repN2.get()
          
-        case_details.resp_rep.title =self.combo_resp_rep_title.current()
+        case_details.resp_rep.title =self.combo_resp_rep_title.get()
         case_details.resp_rep.first_name=self.entry_resp_repN1.get()
         case_details.resp_rep.last_name= self.entry_resp_repN2.get()
+        
          
 
-        case_details.reasons=self.combo_reasons.current()
+        case_details.reasons=self.combo_reasons.get()
          
             
         
@@ -1212,7 +1355,7 @@ class  Children(BasePage,tk.Frame):
         
         self.row_no+=1
         
-        child_widgets={
+        self.child_widgets={
                         'label':tk.Label(self.child_input_frame,
                         text=child_text_id,
                         bg=BACKGROUND_COLOUR,
@@ -1232,13 +1375,14 @@ class  Children(BasePage,tk.Frame):
                                                    fg=BACKGROUND_COLOUR,
                                                    command= self.another_kid)
         }
-        self.child_widgets_list.append(child_widgets)
-        child_widgets['label'].grid(row=self.row_no,column=0, padx=(10,10),pady=10,sticky='w')
-        child_widgets['name1'].grid (row=self.row_no,column=1, padx=(10,10),pady=10,sticky='w')  
-        child_widgets['name2'].grid (row=self.row_no,column=2, padx=(10,10),pady=10,sticky='w')  
-        child_widgets['gender'].grid (row=self.row_no,column=3, padx=(10,10),pady=10,sticky='w')  
-        child_widgets['birthday'].grid (row=self.row_no,column=4, padx=(10,0),pady=10,sticky='w') 
-        child_widgets['another_child'].grid (row=self.row_no,column=5, padx=(10,10),pady=10,sticky='w')
+
+        self.child_widgets_list.append(self.child_widgets)
+        self.child_widgets['label'].grid(row=self.row_no,column=0, padx=(10,10),pady=10,sticky='w')
+        self.child_widgets['name1'].grid (row=self.row_no,column=1, padx=(10,10),pady=10,sticky='w')  
+        self.child_widgets['name2'].grid (row=self.row_no,column=2, padx=(10,10),pady=10,sticky='w')  
+        self.child_widgets['gender'].grid (row=self.row_no,column=3, padx=(10,10),pady=10,sticky='w')  
+        self.child_widgets['birthday'].grid (row=self.row_no,column=4, padx=(10,0),pady=10,sticky='w') 
+        self.child_widgets['another_child'].grid (row=self.row_no,column=5, padx=(10,10),pady=10,sticky='w')
        
         
         
@@ -1258,35 +1402,51 @@ class  Children(BasePage,tk.Frame):
         self.bottom_frame.grid_columnconfigure(1,weight=1)
         
     #FUNCTIONS CHILDREN
+    def latest_dob(self):
+        
+       
+        youngest_dob=None
+        
+        
+        for child in self.child_widgets_list:
+            child_birthday =child['birthday'].get_date()
+            if youngest_dob is None or child_birthday > youngest_dob:
+                youngest_dob=child_birthday
+                
+        return youngest_dob
+                
+                
+                
     
     def fill_widgets(self):
         
-        widget_values=[]
-        child1=('Arthur','Simpson','boy','01','01','2021')
-        widget_values.append(child1)
-        child2=('Belinda','Simpson','girl','02','02','2022')
-        widget_values.append(child2)
-        child3=('Charlie','Simpson','boy','03','03','2020')
-        widget_values.append(child3)
-        x = len(widget_values)
-        y=len(self.child_widgets_list)
-        for index,widgets in enumerate(self.child_widgets_list):
-            i=index
+            widget_values=[]
+            child1=('Arthur','Simpson','boy','01','01','2021')
+            widget_values.append(child1)
+            child2=('Belinda','Simpson','girl','02','02','2022')
+            widget_values.append(child2)
+            child3=('Charlie','Simpson','boy','03','03','2020')
+            widget_values.append(child3)
+            x = len(widget_values)
+            y=len(self.child_widgets_list)
+            for index,widgets in enumerate(self.child_widgets_list):
+                i=index
             #widgets['label'].
-            widgets['name1'].delete(0,tk.END)
-            widgets['name1'].insert(0,widget_values[i][0])
-            widgets['name2'].delete(0,tk.END)
-            widgets['name2'].insert(0,widget_values[i][1])
-            widgets['gender'].set(widget_values[i][2])
-            bday=widget_values[i][3]
-            bmonth=widget_values[i][4]
-            byear=widget_values[i][5]
-            boithdoy=f"{bday}/{bmonth}/{byear}"
+                widgets['name1'].delete(0,tk.END)
+                widgets['name1'].insert(0,widget_values[i][0])
+                widgets['name2'].delete(0,tk.END)
+                widgets['name2'].insert(0,widget_values[i][1])
+                widgets['gender'].set(widget_values[i][2])
+                bday=widget_values[i][3]
+                bmonth=widget_values[i][4]
+                byear=widget_values[i][5]
+                boithdoy=f"{bday}/{bmonth}/{byear}"
             
-            widgets['birthday'].set_date(boithdoy)
+                widgets['birthday'].set_date(boithdoy)
            
             
     def show_the_kids(self,child):
+        
         now=datetime.now()
         ten_years_ago = now.replace(year=now.year - 10)
         now=ten_years_ago
@@ -1309,7 +1469,7 @@ class  Children(BasePage,tk.Frame):
                                         style="Custom.TCombobox",width=5),
                         'birthday':DateEntry(self.child_input_frame, width=12, year=now.year, month=now.month, day=now.day,
             bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font =("Helvetica",12),
-            date_pattern='dd-mm-yyyy'),      
+            date_pattern='dd/mm/yyyy'),      
                             
                         
                         
@@ -1324,7 +1484,7 @@ class  Children(BasePage,tk.Frame):
         child_widget_dict['name2'].insert(0,child.last_name)
         child_widget_dict['gender'].set(child.gender)
         
-        child_widget_dict['birthday'].set(child.dob_year)
+        child_widget_dict['birthday'].set_date(child.birthday_object)
 
         
         self.child_widgets_list.append(child_widget_dict)
@@ -1349,7 +1509,7 @@ class  Children(BasePage,tk.Frame):
        
         
         if case_details.children:
-            case_details.children = sorted(case_details.children, key=lambda child: child.dob_object)
+            case_details.children = sorted(case_details.children, key=lambda child: child.birthday_object)
             for child in case_details.children:
                 self.show_the_kids(child)
                 self.row_no+=1
@@ -1404,6 +1564,10 @@ class  Children(BasePage,tk.Frame):
         
         
     def another_kid(self):
+        youngest_birthday=self.latest_dob()
+        set_year = youngest_birthday.year
+        
+
         if self.child_widgets_list:
             last_row_widgets = self.child_widgets_list[-1]  # Get the last added dictionary
             last_row_widgets['another_child'].grid_forget()  # Hide the button
@@ -1419,7 +1583,7 @@ class  Children(BasePage,tk.Frame):
        
         now=datetime.now()
         
-        child_widgets={
+        self.child_widgets={
                         'label':tk.Label(self.child_input_frame,
                         text=child_text_id,
                         bg=BACKGROUND_COLOUR,
@@ -1431,25 +1595,27 @@ class  Children(BasePage,tk.Frame):
                                         values = kid_genders,
                                         style="Custom.TCombobox",width=5),
                         'birthday':DateEntry(self.child_input_frame, 
-                                             width=12, year=now.year, 
+                                             width=12, year=set_year, 
                                              month=now.month, 
                                              day=now.day,
                                              bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,
                                              font =("Helvetica",12),
-                                             date_pattern='dd-mm-yyyy'),                               
+                                             date_pattern='dd/mm/yyyy'),                               
                         'another_child': tk.Button(self.child_input_frame,
                                                    text="Another Child",
                                                    bg=FOREGROUND_COLOUR,
                                                    fg=BACKGROUND_COLOUR,
                                                    command= self.another_kid)
         }
-        self.child_widgets_list.append(child_widgets)
-        child_widgets['label'].grid(row=self.row_no,column=0, padx=(10,10),pady=10,sticky='w')
-        child_widgets['name1'].grid (row=self.row_no,column=1, padx=(10,10),pady=10,sticky='w')  
-        child_widgets['name2'].grid (row=self.row_no,column=2, padx=(10,10),pady=10,sticky='w')  
-        child_widgets['gender'].grid (row=self.row_no,column=3, padx=(10,10),pady=10,sticky='w')  
-        child_widgets['birthday'].grid(row=self.row_no,column=4,padx=(10,10),pady=10,sticky='w')
-        child_widgets['another_child'].grid (row=self.row_no,column=5, padx=(10,10),pady=10,sticky='w')
+        self.child_widgets['birthday'].bind("<<DateEntrySelected>>", lambda event: self.lowest_date())
+
+        self.child_widgets_list.append(self.child_widgets)  
+        self.child_widgets['label'].grid(row=self.row_no,column=0, padx=(10,10),pady=10,sticky='w')
+        self.child_widgets['name1'].grid (row=self.row_no,column=1, padx=(10,10),pady=10,sticky='w')  
+        self.child_widgets['name2'].grid (row=self.row_no,column=2, padx=(10,10),pady=10,sticky='w')  
+        self.child_widgets['gender'].grid (row=self.row_no,column=3, padx=(10,10),pady=10,sticky='w')  
+        self.child_widgets['birthday'].grid(row=self.row_no,column=4,padx=(10,10),pady=10,sticky='w')
+        self.child_widgets['another_child'].grid (row=self.row_no,column=5, padx=(10,10),pady=10,sticky='w')
         self.row_no+=1 
         
     def to_dict(self):
@@ -1517,8 +1683,8 @@ class Recitals(BasePage,tk.Frame):
         
         #RECITALS:THE FRAME CONTAINING THE INPUT WIDGETS       
         self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
-        self.input_frame.grid(row=self.row_no,column=0,sticky='nsew')
-        self.input_frame.grid_columnconfigure(0,weight=1)
+        self.input_frame.grid(row=self.row_no,column=0,sticky='nw')
+        self.input_frame.grid_columnconfigure(0,weight=0)
         
         #RECITALS THE INPUT WIDGETS
         self.checked_items=[]
@@ -1530,6 +1696,31 @@ class Recitals(BasePage,tk.Frame):
             chkbutton.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
             
             self.row_no+=1
+            
+        statements_label=tk.Label(self.input_frame,text="Statements Read")
+        statements_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+        statements_label.grid(row=self.row_no,column=0,padx=(10,10),pady=10,sticky='w')
+        self.row_no+=1
+        statement_of_label=tk.Label(self.input_frame,text="Statement of ")
+        statement_of_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+        statement_of_label.grid(row=self.row_no,column=0,padx=(10,10),pady=10,sticky='w')
+        
+        self.wit_name1_text=tk.Entry(self.input_frame,background="white",fg=FOREGROUND_COLOUR)
+        self.wit_name1_text.grid(row=self.row_no,column=1,padx=(10,0),pady=10,sticky='w')
+        dated_label=tk.Label(self.input_frame, text=' dated ')
+        dated_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+        dated_label.grid(row=self.row_no,column=2,padx=(10,10),pady=10,sticky='w')        
+        now=datetime.now()
+        self.stat_date=DateEntry(self.input_frame, width=12, year=now.year, month=now.month, day=now.day,
+                                 date_pattern="dd//mm//yyyy")
+        self.stat_date.grid(row=self.row_no,column=3,padx=(0,10),pady=10,sticky='w')
+        
+        another_button=tk.Button(self.input_frame,text='Another Statement',command=self.another_witness)
+        another_button.config(bg=FOREGROUND_COLOUR,fg=BACKGROUND_COLOUR)
+        another_button.grid(row=self.row_no,column=4,padx=0,pady=0,sticky='w')
+        
+       
+        
             
             
         
@@ -1559,9 +1750,15 @@ class Recitals(BasePage,tk.Frame):
                 return 'an '
             else:
                 return 'a '
+            
+    def another_witness(self):
+        print('In another witness')
+        
         
     def on_show(self):
-        pass
+        
+        self.wit_name1_text.delete(0,tk.END)
+        self.wit_name1_text.insert(0,case_details.applicant.full_name)
     
     def back_step(self):
         tempvar=self.case_details.notice
@@ -1579,25 +1776,30 @@ class Recitals(BasePage,tk.Frame):
         
         
         artic=self.article(app_type)
-        the_notice = case_details.notice
+        the_notice = case_details.notice_string
         the_notice=the_notice.lower()
         
         if type(case_details.application) is not int:
             app_type=case_details.application
             app_type.lower()
+            
        
         recitals_dict={
-            "Standard":(f"This is {artic} {app_type} made against the respondent "
-            f"{case_details.respondent.first_name}  {case_details.respondent.last_name} on {case_details.hearing_date} "
+            "Standard":(
+                f"This is {artic} {app_type} made against the respondent "
+            f"{case_details.respondent.first_name}  {case_details.respondent.last_name} on "
+            f"{case_details.hearing_date_object.strftime('%d %B %Y').replace(' 0', ' ') if case_details.hearing_date_object.day < 10 else case_details.hearing_date_object.strftime('%d %B %Y')} "
             f"by {case_details.judge_rank} {case_details.judge_name} "
-            f"on the application of the applicant {case_details.applicant.first_name}  {case_details.applicant.last_name}"),
+            f"on the application of the applicant {case_details.applicant.first_name}  {case_details.applicant.last_name}"
+            ),
+            
              "Legal Aid":("The court records the following information for the purposes of the Family Advocacy Scheme (FAS):\n"
 "\ta.	the advocates met for pre-hearing discussions between [time] and [time];\n"
 "\tb.	the hearing started at [start time] and ended at [end time] ; \n"
 "\tc.	the court allowed [time} thereafter for preparation and agreement of the order between [time] and [time];\n"
 "\td.	{advocate_name} is entitled to a bolt on because {advocate_nominative_pronoun} is representing a client who is facing allegations that they have caused significant harm to a child and these are a live issue in proceedings;\n"
 "\te.	all advocates are entitled to a bolt on because an independent expert witness was cross-examined and substantially challenged by a party at the hearing; and"
-"\tf.	the advocates’ bundle page count is [number].),"
+"\tf.	the advocates bundle page count is [number].),"
              ),
             "Remote Hearing":"",
             "Covid":("The court determined that in the exceptional circumstances of the current national public health emergency" 
@@ -1900,11 +2102,12 @@ class OccOrders(BasePage):
         relat=case_details.relationship
         tody=date.today()
         leave_date = tody + timedelta(days=7)
+        leave_date=leave_date.strftime("%d %B %Y")
         
         self.ord_dict={}
         key = "Declaration of Mat Home Rights"
         value =(
-            f"The court declares that the applicant"
+            f"The court declares that the applicant "
          f"{app_name}, has home rights in {mat_home}."
          )
         
@@ -2154,7 +2357,7 @@ class NonMols(BasePage):
 
         value=(f"The respondent {resp_name}, must not telephone, text,email or otherwise contact or attempt  "
                f"the relevant {kidno} including via social networking websites or other forms of electronic"
-               f"messaging."
+               f" messaging."
         )
         self.ord_dict[key]=value
         

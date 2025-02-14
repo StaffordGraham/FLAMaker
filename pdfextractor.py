@@ -23,12 +23,13 @@ def extract_field_names(pdf_path):
         pdf_reader=PyPDF2.PdfReader(file)
         for page_num in range(len(pdf_reader.pages)):
             page = pdf_reader.pages[page_num]
-            annotations=page.get('//Annots',[])
-            for annotation in annotations:
-                field_obj=annotation.get_object()
-                field_name=field_obj.get('/T')
-                if field_name:
-                    field_names.add(field_name)
+            annotations = page.get('/Annots', None)
+            if annotations:
+                for annotation in annotations:
+                    field_obj = annotation.get_object()
+                    field_name = field_obj.get('/T')
+                    if field_name:
+                        field_names.add(field_name)
     return field_names                
                     
             
@@ -41,7 +42,7 @@ def get_App_Data(selected_file):
     
     # Extract form fields and their values
         applicant = Person('Applicant')
-        form_fields = page['/Annots']
+        form_fields = page['/Annots',None]
         for field in form_fields:
             field_obj = field.get_object()
             field_name = field_obj.get('/T')  # Get the field name
