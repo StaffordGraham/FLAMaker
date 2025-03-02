@@ -41,7 +41,7 @@ def write_order(case_details):
         court_name_run.bold=True
         
         case_number_paragraph=case_number_cell.paragraphs[0]
-        case_number_run=case_number_paragraph.add_run(case_number_text)
+        case_number_run=case_number_paragraph.add_run(case_details.case_number)
         case_number_run.bold=True
         
         #LINE

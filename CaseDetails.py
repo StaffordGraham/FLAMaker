@@ -46,6 +46,7 @@ class CaseDetails:
             self.app_rep=Person("Applicant's Representative")
             self.resp_rep=Person("Respondent's Representative")
             self.respondent=Person('Respondent')
+            self.statements_read=[]
             self.parties=[]
             self.children=[]
             self.definitions=[]

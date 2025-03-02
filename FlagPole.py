@@ -77,8 +77,7 @@ class MultiPage(tk.Tk):
         self.geometry("880x550")
         self.container=ttk.Frame(self)
         self.container.pack(fill='both',expand=True)
-        self.pages=[Start,Case,Hearing,Applicant,Respondent,Children,Recitals,Undertakings,OccOrders,NonMols,Duration,Actions]
-        tempo='tempo'
+        self.pages=[Case,Applicant,Respondent,Children,Hearing,OccOrders,NonMols,Duration, Further_Info,Actions]
         self.current_page_index=0
 
 
@@ -287,22 +286,22 @@ class Case (BasePage,tk.Frame):
         self.combo_court_name.config(background='white')
         self.combo_court_name.grid(row=self.row_no,column=1,padx=(10),pady=10,sticky='e')
         self.grid_columnconfigure(0,weight=0)
-        self.combo_court_name.set('Medway')      
+        self.combo_court_name.set("Medway")      
 
         
         self.row_no +=1
         
         #The CASE NAME
-        label_case_name=tk.Label(self,text="Case Name",font=theFont,anchor='e')
-        label_case_name.config(bg="white", fg=FOREGROUND_COLOUR)
-        label_case_name.grid(row=self.row_no,column=0,padx=0,pady=10,sticky='e')
-        self.entry_case_name=tk.Entry(self,background="white",fg=FOREGROUND_COLOUR)
-        self.entry_case_name.grid(row=self.row_no,column=1,padx=(10),pady=(10),sticky='w')
+        # label_case_name=tk.Label(self,text="Case Name",font=theFont,anchor='e')
+        # label_case_name.config(bg="white", fg=FOREGROUND_COLOUR)
+        # label_case_name.grid(row=self.row_no,column=0,padx=0,pady=10,sticky='e')
+        # self.entry_case_name=tk.Entry(self,background="white",fg=FOREGROUND_COLOUR)
+        # self.entry_case_name.grid(row=self.row_no,column=1,padx=(10),pady=(10),sticky='w')
         
 
          
         
-        self.row_no +=1
+       # self.row_no +=1
          #THE CASE NUMBER
         
         case_number_lbl =tk.Label(self,text="Case Number",font=('Helvetica',12),anchor='e',width=20)
@@ -386,9 +385,18 @@ class Case (BasePage,tk.Frame):
         self.bottom_frame.grid_columnconfigure(1,weight=1)
         self.fill_widgets()
     def on_show(self):
-        self.combo_judge_rank=case_details.judge_rank
-        self.entry_judge_name.set(case_details.judge_name)
-        self.combo_judge_gender=case_details.judge_gender
+        if case_details.judge_rank:
+            self.combo_judge_rank=case_details.judge_rank
+        else:
+            self.combo_judge_rank="Deputy District Judge"
+        if case_details.judge_gender:
+            self.combo_judge_gender=case_details.judge_gender
+        else:
+            self.combo_judge_gender="Male"
+        if case_details.judge_name:
+            self.entry_judge_name=case_details.judge_name
+        else:
+            self.entry_judge_name="Campbell"
         
     def update_bottom_frame_width(self,event=None):
        self.bottom_frame.place_configure(width=self.winfo_width())
@@ -399,7 +407,6 @@ class Case (BasePage,tk.Frame):
 
         
         case_details.court_name=self.combo_court_name.get()
-        case_details.case_name=self.entry_case_name.get()
         case_details.case_number=self.entry_case_number.get()
         case_details.judge_rank=self.combo_judge_rank.get()
         case_details.judge_name=self.entry_judge_name.get()
@@ -429,7 +436,6 @@ class Case (BasePage,tk.Frame):
         if test_run==True:
             self.combo_application.set('Occupation Order')
             self.combo_court_name.set('Medway')
-            self.entry_case_name.insert(0,'Hansel v Gretel')
             self.entry_case_number.insert(0,'ME F240089')
             self.relat_combo.set('Marriage')
             self.combo_judge_rank.set('Deputy District Judge')
@@ -446,8 +452,6 @@ class Case (BasePage,tk.Frame):
             else:
                 self.combo_court_name.set(case_details.court_name)
                 
-            self.entry_case_name.delete(0,'end')
-            self.entry_case_name.insert(0,case_details.case_name)
             self.entry_case_number.delete(0,'end')
             self.entry_case_number.insert(0,case_details.case_number)
             
@@ -621,19 +625,8 @@ class Applicant(BasePage,tk.Frame):
         self.gender_combo.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
         self.applicant_widgets.append(self.gender_combo)
 
-        self.row_no+=1
         
-        dob_label=tk.Label(self.input_frame,text="Date of Birth", font=("Helvetica",12))
-        dob_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
-        dob_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
-        now=datetime.now()
-        self.dob = DateEntry(self.input_frame, width=12, year=now.year, month=now.month, day=now.day,
-			bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font =("Helvetica",10),date_pattern='dd/mm/yyyy')
-        self.applicant_widgets.append(self.dob)
-
- 
-        self.dob.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
-        self.row_no+=1
+        
         self.row_no+=1
         add1_label=tk.Label(self.input_frame,text="Address 1", font=("Helvetica",12))
         add1_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
@@ -679,15 +672,7 @@ class Applicant(BasePage,tk.Frame):
         self.row_no+=1
        
        
-        telephone_label=tk.Label(self.input_frame,text="Telephone No ",font=("Helvetica", 12))
-
-        telephone_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
-        telephone_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
-        self.telephone_entry=tk.Entry(self.input_frame,background='white',fg=FOREGROUND_COLOUR)
-        self.applicant_widgets.append(self.telephone_entry)
-        self.telephone_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
-        
-        self.row_no+=1
+      
         
          #THE FRAME FOR THE NEXT AND BACK BUTTONS WITH RELATED FUNCTION -CHILDREN
         
@@ -716,7 +701,6 @@ class Applicant(BasePage,tk.Frame):
         self.first_name_entry.insert(0,case_details.applicant.first_name)
         self.surname_entry.delete(0,'end')
         self.surname_entry.insert(0,case_details.applicant.last_name)
-       #self.dob.set_date
         self.add1_entry.delete(0,'end')
         self.add1_entry.insert(0,case_details.applicant.address_building_and_street)
         self.add2_entry.delete(0,'end')
@@ -776,12 +760,10 @@ class Applicant(BasePage,tk.Frame):
         
         case_details.applicant.full_name=case_details.applicant.first_name +" "+case_details.applicant.last_name
         case_details.applicant.gender=self.gender_combo.get()
-        case_details.applicant.dob=self.dob.get()
         case_details.applicant.address_building_and_street=self.add1_entry.get()
         case_details.applicant.address_second_line=self.add2_entry.get()
         case_details.applicant.address_town_or_city=self.town_entry.get()
         case_details.applicant.address_postcode=self.postcode_entry.get()
-        case_details.applicant.phone =self.telephone_entry.get()
         
         case_details.applicant.set_pronouns()
         temp_var=self.check_var.get()
@@ -871,17 +853,6 @@ class Respondent(BasePage,tk.Frame):
         gender_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
         self.gender_combo.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
         self.row_no+=1
-        
-        dob_label=tk.Label(self.widget_frame,text="Date of Birth", font=("Helvetica",12))
-        dob_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
-        dob_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
-        now=datetime.now()
-        self.dob = DateEntry(self.widget_frame, width=12, year=now.year, month=now.month, day=now.day,
-
-			bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font =("Helvetica",10),date_pattern='dd/mm/yyyy')
-        self.respondent_widgets.append(self.dob)
-        self.dob.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
-        self.row_no+=1
         add1_label=tk.Label(self.widget_frame,text="Address 1", font=("Helvetica",12))
         add1_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         self.add1_entry=tk.Entry(self.widget_frame,background="white",fg=FOREGROUND_COLOUR)
@@ -914,17 +885,7 @@ class Respondent(BasePage,tk.Frame):
         self.respondent_widgets.append(self.postcode_entry)
         self.row_no+=1
        
-       
-        telephone_label=tk.Label(self.widget_frame,text="Telephone No ",font=("Helvetica", 12))
-
-        telephone_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
-        telephone_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
-        self.telephone_entry=tk.Entry(self.widget_frame,background='white',fg=FOREGROUND_COLOUR)
-        self.respondent_widgets.append(self.telephone_entry)
-        self.telephone_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
-        
-        self.row_no+=1
-        
+               
         #NEXT AND BACK BUTTONS
         
           #THE FRAME FOR THE NEXT AND BACK BUTTONS WITH RELATED FUNCTION -CHILDREN
@@ -953,17 +914,24 @@ class Respondent(BasePage,tk.Frame):
             self.gender_combo.set(case_details.respondent.gender)
         
         self.first_name_entry.delete(0,'end')
-        self.first_name_entry.insert(0,case_details.respondent.first_name)
-        self.surname_entry.delete(0,'end')
-        self.surname_entry.insert(0,case_details.respondent.last_name)
-        self.add1_entry.delete(0,'end')
-        self.add1_entry.insert(0,case_details.respondent.address_building_and_street)
-        self.add2_entry.delete(0,'end')
-        self.add2_entry.insert(0,case_details.respondent.address_second_line)
-        self.town_entry.delete(0,'end')
-        self.town_entry.insert(0,case_details.respondent.address_town_or_city)
-        self.postcode_entry.delete(0,'end')
-        self.postcode_entry.insert(0,case_details.respondent.address_postcode)
+        if case_details.respondent.first_name:
+            self.first_name_entry.insert(0,case_details.respondent.first_name)
+        if case_details.respondent.last_name:
+            self.surname_entry.delete(0,'end')
+            self.surname_entry.insert(0,case_details.respondent.last_name)
+        if case_details.respondent.address_building_and_street:
+            self.add1_entry.delete(0,'end')
+            self.add1_entry.insert(0,case_details.respondent.address_building_and_street)
+        if case_details.respondent.address_second_line:
+            self.add2_entry.delete(0,'end')
+            self.add2_entry.insert(0,case_details.respondent.address_second_line)
+            
+        if case_details.respondent.address_town_or_city:
+            self.town_entry.delete(0,'end')
+            self.town_entry.insert(0,case_details.respondent.address_town_or_city)
+        if case_details.respondent.address_postcode:
+            self.postcode_entry.delete(0,'end')
+            self.postcode_entry.insert(0,case_details.respondent.address_postcode)
     
     def fill_widgets(self):
         if test_run==True:
@@ -1004,9 +972,7 @@ class Respondent(BasePage,tk.Frame):
         case_details.respondent.address_second_line=self.add2_entry.get()
         case_details.respondent.address_town_or_city=self.town_entry.get()
         case_details.respondent.address_postcode=self.postcode_entry.get()
-        case_details.respondent.phone =self.telephone_entry.get()
         case_details.respondent.set_pronouns()
-        case_details.respondent.dob=self.dob.get()
         
          
          
@@ -1021,6 +987,7 @@ class Hearing(BasePage,tk.Frame):
         style=ttk.Style()
         self.config(bg=BACKGROUND_COLOUR)
         self.row_no =0
+        self.notice_row_no=0
         self.grid(sticky='w')
         self.grid_columnconfigure(0,weight=0)
        
@@ -1088,9 +1055,9 @@ class Hearing(BasePage,tk.Frame):
         
         
         #REASON
-        label_notice_reason=tk.Label(self.input_frame,text="Reason for lack of notice",font=("Helvetica,16"))
-        label_notice_reason.config(background=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
-        label_notice_reason.grid(row=self.row_no,column=0,padx=(10,10),pady=(10,10),sticky='w')
+        self.label_notice_reason=tk.Label(self.input_frame,text="Reason for lack of notice",font=("Helvetica,16"))
+        self.label_notice_reason.config(background=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.label_notice_reason.grid(row=self.row_no,column=0,padx=(10,10),pady=(10,10),sticky='w')
         self.combo_reasons=ttk.Combobox(self.input_frame,values=self.reasons)
         self.combo_reasons.config(background=BACKGROUND_COLOUR,foreground=FOREGROUND_COLOUR)
         self.combo_reasons.grid(row=self.row_no,column=1,padx=(10,10),pady=(10,10),sticky='w')
@@ -1099,17 +1066,28 @@ class Hearing(BasePage,tk.Frame):
         self.row_no+=1
         
         #CONSENT ORDER 
-        self.consent_var=tk.BooleanVar()
-        chk_consent=tk.Checkbutton(self.input_frame,
-                text='Tick if Consent Order',
-                variable=self.consent_var,
-                font=theFont,
-                anchor='e'
-                )
         
-        chk_consent.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
-        chk_consent.grid(row=self.row_no,column=0,padx=(10,10),pady=10,sticky='w')
-        self.row_no+=2
+        
+        #STATEMENT READ
+        self.statements_label=tk.Label(self.input_frame,text="Statements Read by the Court")
+        self.statements_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+        self.statements_label.grid(row=self.row_no,column=0,padx=(0,0),pady=10,sticky='w')
+        self.row_no+=1
+        self.statement_of_label=tk.Label(self.input_frame,text="Statement  of ")
+        self.statement_of_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+        self.statement_of_label.grid(row=self.row_no,column=0,padx=(0,0),pady=10,sticky='w')
+        
+        self.wit_name1_text=tk.Entry(self.input_frame,background="white",fg=FOREGROUND_COLOUR)
+        self.wit_name1_text.grid(row=self.row_no,column=1,padx=(0,0),pady=10,sticky='w')
+        self.dated_label=tk.Label(self.input_frame, text=' dated ')
+        self.dated_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+        self.dated_label.grid(row=self.row_no,column=2,padx=(10,10),pady=10,sticky='w')        
+        now=datetime.now()
+        self.stat_date=DateEntry(self.input_frame, width=12, year=now.year, month=now.month, day=now.day,
+                                 date_pattern="dd//mm//yyyy")
+        self.stat_date.grid(row=self.row_no,column=3,padx=(0,10),pady=10,sticky='w')
+        
+        
         
         #SEPARATOR
         
@@ -1118,13 +1096,13 @@ class Hearing(BasePage,tk.Frame):
         #APPLICANT REPRESENTATIVE
         label_app_rep=tk.Label(self,text="Applicant Representative",font=theFont,anchor='w')
         label_app_rep.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
-        label_app_rep.grid(row=self.row_no,column=0,padx=0,pady=10,sticky='w')
+        label_app_rep.grid(row=self.row_no,column=0,padx=0,pady=0,sticky='w')
         self.combo_app_rep_title  = ttk.Combobox(self,values=titles,style="Custom.TCombobox",width=5)
         self.combo_app_rep_title.grid(row=self.row_no,column=1,padx=(0),pady=(10),sticky='w')
         self.entry_app_repN1 =tk.Entry(self,font=("Helvetica, 16"),width=10)
-        self.entry_app_repN1.grid(row=self.row_no,column=2,padx=(10),pady=(10))
+        self.entry_app_repN1.grid(row=self.row_no,column=2,padx=(0),pady=(10))
         self.entry_app_repN2 =tk.Entry(self,font=("Helvetica, 16"),width=10)
-        self.entry_app_repN2.grid(row=self.row_no,column=3,padx=(10),pady=(10))
+        self.entry_app_repN2.grid(row=self.row_no,column=2,padx=(0),pady=(10))
        
         self.row_no+=1
         
@@ -1172,12 +1150,31 @@ class Hearing(BasePage,tk.Frame):
         
         self.fill_widgets()
         
+    def another_witness():
+        pass
+        
         
     def on_combo_notice_selected(self,event):
-        if self.combo_notice.get() !="On Notice":
-            self.combo_reasons.config(state='normal')
-        else:
+        if self.combo_notice.get() =="On Notice":
+            self.label_notice_reason.grid_forget()
+            self.combo_reasons.grid_forget()
             self.combo_reasons.config(state='disabled')
+            self.statement_of_label.grid_forget()
+            self.wit_name1_text.grid_forget()
+            self.dated_label.grid_forget()
+            self.stat_date.grid_forget()
+            self.statements_label.grid_forget()
+            
+            
+        else:
+            self.label_notice_reason.grid()
+            self.combo_reasons.grid()
+            self.combo_reasons.config(state='normal')
+            self.statement_of_label.grid()
+            self.wit_name1_text.grid()
+            self.dated_label.grid()
+            self.stat_date.grid()
+            
             
 
     def on_double_click(self,event):
@@ -1199,7 +1196,25 @@ class Hearing(BasePage,tk.Frame):
     def on_show(self):
         self.cal.set_date(case_details.hearing_date_object)
         self.comb_listed_for.set(case_details.listed_for)
-        self.combo_notice.set(case_details.notice)
+        if case_details.notice:
+            self.combo_notice.set(case_details.notice)
+            
+        else:
+            self.combo_notice=="Without Notice"
+                
+        if case_details.notice=="On Notice":
+            self.label_notice_reason.grid_forget()
+            self.combo_reasons.grid_forget()
+            self.combo_reasons.config(state='disabled')
+            self.statement_of_label.grid_forget()
+            self.wit_name1_text.grid_forget()
+            self.dated_label.grid_forget()
+            self.stat_date.grid_forget()
+            self.statements_label.grid_forget()
+            self.label_notice_reason.grid_remove()
+            self.combo_reasons.grid_remove()
+            
+            
         self.combo_reasons.set(case_details.reasons)
         self.combo_app_rep_title.set(case_details.app_rep.title)
         self.entry_app_repN1.delete(0,'end')
@@ -1230,7 +1245,6 @@ class Hearing(BasePage,tk.Frame):
         case_details.hearing_date_object=hearing_date_object
         l_for =self.comb_listed_for.current()
         case_details.notice=self.combo_notice.get()
-        case_details.consent=self.consent_var.get()
         case_details.app_rep.title =self.combo_app_rep_title.get()
         case_details.app_rep.first_name=self.entry_app_repN1.get()
         case_details.app_rep.last_name= self.entry_app_repN2.get()
@@ -1375,6 +1389,7 @@ class  Children(BasePage,tk.Frame):
                                                    fg=BACKGROUND_COLOUR,
                                                    command= self.another_kid)
         }
+       
 
         self.child_widgets_list.append(self.child_widgets)
         self.child_widgets['label'].grid(row=self.row_no,column=0, padx=(10,10),pady=10,sticky='w')
@@ -1515,6 +1530,10 @@ class  Children(BasePage,tk.Frame):
                 self.row_no+=1
                 
             case_details.children.clear()
+            
+        if case_details:
+            t =case_details.respondent.last_name
+        self.child_widgets['name2'].insert(0,t)
             
         
         
@@ -2225,6 +2244,7 @@ class NonMols(BasePage):
             "Not communicate",
             "Not damage property",
             "Not damage family home",
+            "Not Enter family home",
             "Non mol zonal",
             "Not intimidate, harass or pester children",
             "Not communicate with children",
@@ -2243,7 +2263,8 @@ class NonMols(BasePage):
             chk.grid(row=self.row_no,column=0,padx=1,pady=10,sticky='w')
             self.row_no+=1
             
-        self.row_no=0            
+        self.row_no=0       
+             
        
             
         self.input_frame.grid_columnconfigure(0,weight=1)
@@ -2294,7 +2315,7 @@ class NonMols(BasePage):
         if len (case_details.children)>1:
             kidno="children"
             
-        school_address= "Hellingly Primary School, Hellingly, East Sussex BN27 1PQ"
+        school_address= ""
             
         
         tody=date.today()
@@ -2338,13 +2359,18 @@ class NonMols(BasePage):
         )
         self.ord_dict[key]=value
         
-        key ="Non mol zonal"
+        key ="Not Enter family home"
 
         value=(f"The respondent {resp_name}, must not go to, enter or attempt to enter {mat_home} or "
                f" any property where {case_details.respondent.nominative} believes the applicant {app_name}"
                f" to be living."
         )
+        
         self.ord_dict[key]=value
+        key="Non mol zonal"
+        self.ord_dict[key]=value
+        value=(f" The respondent {resp_name} must not approach within 100 meters of the {mat_home}"
+        )
         
         key="Not intimidate, harass or pester children"
 
@@ -2554,10 +2580,25 @@ class Actions(BasePage,tk.Frame):
         page_title.grid(row=self.row_no,column=0, padx=0,pady=10,sticky='ew')
 		
 #WIDGET Frame
-	
+        
         self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
         self.input_frame.grid(row=1,column=0,sticky='w')
         self.input_frame.grid_columnconfigure(0,weight=0)
+        self.row_no=0
+        
+#THE WIDGETS
+#Consent Order Check box
+        self.row_no+=1
+        
+        self.consent_var=tk.BooleanVar()
+        self.chk_consent=tk.Checkbutton(self.input_frame,
+                text='Tick if Consent Order',
+                variable=self.consent_var,
+                font=theFont,
+                anchor='e'
+                )
+        self.chk_consent.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.chk_consent.grid(row=self.row_no, column=0, padx=10, pady= 10,sticky='w')
         self.row_no+=1
         print_button = tk.Button(self.input_frame,text="Create Order",command=self.produce_order)
         print_button.config(background=FOREGROUND_COLOUR,fg=BACKGROUND_COLOUR)
@@ -2592,10 +2633,159 @@ class Actions(BasePage,tk.Frame):
 
     def update(self):
         pass
+    
+    def front_step(self):
+        pass
 
     def back_step(self):
         self.update(self)
         self.controller.last_page()
+        
+    def produce_order(self):
+        write_order(case_details=case_details)
+        
+    def save_file():
+        pass
+    
+        
+#HEADER
+
+class Further_Info(BasePage,tk.Frame):
+    
+    def __init__(self,parent,controller,case_details):
+        super().__init__(parent,controller,case_details)
+        tk.Frame.__init__(self,parent)
+        self.case_details=case_details
+        self.controller=controller
+        self.config(bg=BACKGROUND_COLOUR)    
+        self.grid_columnconfigure(0,weight=1)
+        self.widgets_list=[]
+        self.applicant_widgets=[]
+        self.combo_list=[]
+
+        self.row_no=1
+		
+#TITLE Frame
+        self.top_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
+        self.top_frame.grid(row=0,column=0,sticky='ew')
+        page_title=tk.Label(self.top_frame,text="Further Information ",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.top_frame.grid_columnconfigure(0,weight=1)
+        page_title.grid(row=self.row_no,column=0, padx=0,pady=10,sticky='ew')
+		
+#WIDGET Frame
+	
+        self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
+        self.input_frame.grid(row=1,column=0,sticky='w')
+        self.input_frame.grid_columnconfigure(0,weight=0)
+        
+#THE WIDGETS
+
+        self.consent_var=tk.BooleanVar()
+        self.chk_consent=tk.Checkbutton(self.input_frame,
+                text='Tick if Consent Order',
+                variable=self.consent_var,
+                font=theFont,
+                anchor='e'
+                )
+        
+        self.chk_consent.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.chk_consent.grid(row=self.row_no,column=0,padx=(10,10),pady=10,sticky='w')
+        self.row_no+=2
+        
+        effect_list=['On Service','made aware']
+        last_list=['1','2','3','6','12']
+        lbl_effect=tk.Label(self.input_frame,text="Order effective from: ",font=theFont)
+        lbl_effect.grid(row=self.row_no,column=0,padx=(10,10),pady=10,sticky='w')
+        lbl_effect.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.comb_effect=ttk.Combobox(self.input_frame, values=effect_list,font=theFont)
+        self.comb_effect.grid(row=self.row_no,column=1,padx=(10,10),pady=10,sticky='w')
+        self.combo_list.append(self.comb_effect)
+        self.row_no+=1
+        lbl_ord_last=tk.Label(self.input_frame,text="The Order lasts for: ",font=theFont)
+        lbl_ord_last.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        lbl_ord_last.grid(row=self.row_no,column=0,padx=(10,10),pady=10,sticky='w')
+        self.combo_or_last=ttk.Combobox(self.input_frame,values=last_list,font=theFont, style="Custom.TCombobox",width=5)
+        self.combo_or_last.grid(row=self.row_no,column=1,padx=(10,0),pady=10,sticky='w')
+        self.combo_list.append(self.combo_or_last)
+        lbl_mnths=tk.Label(self.input_frame,text="months",font=theFont)
+        lbl_mnths.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        lbl_mnths.grid(row=self.row_no,column=2,padx=(2,10),pady=10,sticky='w')
+        #Property Address
+        self.row_no +=1
+        self.title_label=tk.Label(self.input_frame,text="Address of Property for Occupation Order")
+        self.title_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+        self.title_label.grid(row=self.row_no,column=0,padx=0,pady=0,sticky='w')
+        
+        self.row_no+=1
+        add1_label=tk.Label(self.input_frame,text="Address 1", font=("Helvetica",12))
+        add1_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.add1_entry=tk.Entry(self.input_frame,background="white",fg=FOREGROUND_COLOUR)
+        add1_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
+        self.applicant_widgets.append(self.add1_entry)
+
+        self.add1_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
+        self.row_no+=1
+        self.add2_label=tk.Label(self.input_frame,text="Address 2", font=("Helvetica",12))
+        self.add2_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.add2_entry =tk.Entry(self.input_frame,background="white",fg=FOREGROUND_COLOUR)
+        self.applicant_widgets.append(self.add2_entry)
+        self.add2_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
+        self.add2_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
+        self.row_no+=1
+        #Town/City
+        town_label=tk.Label(self.input_frame,text="Town/City", font=("Helvetica",12))
+        town_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.town_entry =tk.Entry(self.input_frame,background="white",fg=FOREGROUND_COLOUR)
+        self.applicant_widgets.append(self.town_entry)
+        town_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
+        self.town_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
+        self.row_no+=1
+        
+        #PostCode
+        postcode_label=tk.Label(self.input_frame,text="Post Code", font=("Helvetica",12))
+        postcode_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.postcode_entry =tk.Entry(self.input_frame,background="white",fg=FOREGROUND_COLOUR)
+        self.applicant_widgets.append(self.postcode_entry)
+        postcode_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
+        self.postcode_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
+
+
+
+
+#NEXT AND BACK BUTTON Frame
+
+        self.bottom_frame=tk.Frame(self,bg=BACKGROUND_COLOUR,height=50)
+        self.bottom_frame.place(relx=0.5,rely=1.0,anchor='s',y=-20)
+        self.bind("<Configure>", self.update_bottom_frame_width)  # Bind resize event
+
+        back_button=tk.Button(self.bottom_frame,text="Back",command=self.back_step)
+        next_button =tk.Button(self.bottom_frame, text="Next",command=self.front_step)
+        back_button.grid(row=1,column=0,padx=10,pady=(0,10),sticky='w')
+        next_button.grid(row=1,column=1,padx=10,pady=(0,10), sticky='e')
+        self.bottom_frame.grid_columnconfigure(0,weight =1)
+        self.bottom_frame.grid_columnconfigure(1,weight=1)
+
+#FUNCTIONS
+
+    def update_bottom_frame_width(self,event=None):
+       self.bottom_frame.place_configure(width=self.winfo_width())
+        
+
+    def on_show(self):
+        pass
+
+    def update(self):
+        
+        pass
+
+    def back_step(self):
+        self.update(self)
+        self.controller.last_page()
+
+    def front_step(self):
+        self.update(self)
+        self.controller.next_page()
+
 
     def front_step(self):
             self.update()
