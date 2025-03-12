@@ -35,7 +35,7 @@ def write_order(case_details):
         coat_of_arms_cell =heading_table.cell(0,0)
         court_name_cell=heading_table.cell(0,1)
         case_number_cell=heading_table.cell(0,2)
-        #coat_of_arms_cell.paragraphs[0].add_run().add_picture('Coat_of_arms.png',width=Inches(1.25))
+        coat_of_arms_cell.paragraphs[0].add_run().add_picture('Coat_of_arms.png',width=Inches(1.25))
         court_name_paragraph=court_name_cell.paragraphs[0]
         court_name_run=court_name_paragraph.add_run(court_name)
         court_name_run.bold=True
@@ -231,45 +231,38 @@ def write_order(case_details):
             
          #ORDERS
             
-            if case_details.consent_order ==True:
-                orders_para_head="IT IS ORDERED BY CONSENT"
-            else:
-                orders_para_head="IT IS ORDERED"
+        if case_details.consent_order ==True:
+            orders_para_head="IT IS ORDERED BY CONSENT"
+        else:
+            orders_para_head="IT IS ORDERED"
                 
                 
-            oph=doc.add_paragraph()
-            ord_head_run=oph.add_run(orders_para_head)
-            ord_head_run.bold=True
-            for opara in case_details.orders:
-                doc.add_paragraph(opara,style='ListNumber')
+        oph=doc.add_paragraph()
+        ord_head_run=oph.add_run(orders_para_head)
+        ord_head_run.bold=True
+        for opara in case_details.orders:
+            doc.add_paragraph(opara,style='ListNumber')
             
-            doc.add_paragraph("_" * 5)
-            judge=case_details.judge_rank+" "+case_details.judge_name
+        doc.add_paragraph("_" * 5)
+        judge=case_details.judge_rank+" "+case_details.judge_name
             
             
-            end=doc.add_paragraph()
+        end=doc.add_paragraph()
             
-            end_run =end.add_run(judge)
-            doc.add_paragraph()
-            date_end=doc.add_paragraph()
-            the_end_date=case_details.hearing_date_object.strftime("%d %B %Y")
-            run_date_end=date_end.add_run(the_end_date)
+        end_run =end.add_run(judge)
+        doc.add_paragraph()
+        date_end=doc.add_paragraph()
+        the_end_date=case_details.hearing_date_object.strftime("%d %B %Y")
+        run_date_end=date_end.add_run(the_end_date)
 
 
-      
-        
-    
-        
-        
-        
-        
-        
+              
         # Save the document
         doc.save("family_court_document.docx")
         
         
         
-        file_path='sample_document.docx'
+        file_path=f"{case_details.file_name}.docx"
         doc.save(file_path)
         os.name='nt'
         os.startfile(file_path)

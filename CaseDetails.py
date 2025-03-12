@@ -31,9 +31,11 @@ class CaseDetails:
             self.case_name=""
             self.judge_name = "Campbell"
             self.judge_rank="Deputy District Judge"
+            self.file_name=""
             self.judge_gender="Male"
             self.case_number =""
             self.hearing_date=""
+            self.app_address_secret = True
             self.hearing_date_object=datetime.now()
             self.listed_for="Interim Hearing"
             self.application="Occupation Order"
@@ -59,6 +61,11 @@ class CaseDetails:
             self.notice_index=0
             self.notice_string=''  
    
+    def name_file(self):
+        A = self.applicant.last_name  
+        R=self.respondent.last_name
+        N=self.case_number
+        self.file_name=f"{A} v {R} {N}"  
         
             
     def reset(self):
