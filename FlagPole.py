@@ -23,6 +23,7 @@ import Lists_Dictionaries
 from Lists_Dictionaries import titles,kid_genders,days,months,years,notice_values
 import create_order
 import pprint
+import pickle
 
 import sys
 case_details=CaseDetails()
@@ -42,7 +43,7 @@ bigFont=("Helvetica", 24)
 
              
          
-test_run=False 
+test_run=True 
 
 
     
@@ -77,7 +78,7 @@ class MultiPage(tk.Tk):
         self.geometry("880x550")
         self.container=ttk.Frame(self)
         self.container.pack(fill='both',expand=True)
-        self.pages=[Case,Applicant,Respondent,Children,Hearing,OccOrders,NonMols,Duration, Further_Info,Actions]
+        self.pages=[Start,Case,Applicant,Respondent,Children,Hearing,OccOrders,NonMols,Duration, Further_Info,Actions]
         self.current_page_index=0
 
 
@@ -129,7 +130,7 @@ class MultiPage(tk.Tk):
             self.current_page_index-=1
             t=self.current_page_index
             next_page=self.pages[self.current_page_index].__name__
-                #self.show_frame(self.pages[self.current_page_index].__name__)
+            
             self.show_frame(next_page)
             
         
@@ -202,9 +203,19 @@ class Start(BasePage,tk.Frame):
    
         
     def file_open(self):
-        filepath=self.open_file_dialog()
+        
+        try:
+            if case_details is not None:
+                del case_details            
+        except NameError:
+            
+            pass
+        
+        filepath =self.open_file_dialog()
+    
         if filepath:
-            case_details.load_from_json(filepath)   
+            with open (filepath,'rb') as file:
+              case_details=pickle.load(file)
             
         self.front_step()
             
@@ -216,7 +227,7 @@ class Start(BasePage,tk.Frame):
         root.withdraw()
         filepath=filedialog.askopenfilename(
             title="Select File",
-            filetypes=[("JSON Files","*.json"),("All Files","*.*")]
+            filetypes=[("SAP Files","*.ord"),("All Files","*.*")]
         )
         return filepath
     
@@ -247,13 +258,15 @@ class Start(BasePage,tk.Frame):
 
 class Case (BasePage,tk.Frame):
     def __init__(self,parent,controller,case_details):
-        
-        super().__init__(parent,controller,case_details)
         tk.Frame.__init__(self,parent)
+
+        super().__init__(parent,controller,case_details)
         self.child_count=0
         self.input_controls =[]
         applications=['Occupation Order','Non-Molestation Order','Occupation & Non-Molestation Orders']
         self.row_no = 0
+        self.check_var = True
+        
 
 
         self.config(bg=BACKGROUND_COLOUR)
@@ -265,8 +278,9 @@ class Case (BasePage,tk.Frame):
         self.top_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
         self.top_frame.grid(row=0,column=0,sticky='ew')
         page_title=tk.Label(self.top_frame,text="The Case ",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
-        page_title.grid(row=self.row_no,column=0, padx=0,pady=10,sticky='ew')
         self.top_frame.grid_columnconfigure(0,weight=1)
+        page_title.grid(row=self.row_no,column=0, padx=0,pady=10,sticky='ew')
+
 
         self.row_no+=1
         
@@ -279,29 +293,19 @@ class Case (BasePage,tk.Frame):
         
         #THE COURT
         court_options = ["Brighton", "Medway","Hastings", "Horsham", "Worthing", "Guildford", "Croydon", "Kingston"]
-        label_court = tk.Label(self, text="Court:", font=theFont,anchor='e',width =15)
+        label_court = tk.Label(self, text="Court:", font=theFont,anchor='w')
         label_court.config(bg=BACKGROUND_COLOUR, fg=FOREGROUND_COLOUR)
-        label_court.grid(row=self.row_no, column=0, padx=(10), pady=10, sticky='e')
-        self.combo_court_name =ttk.Combobox(self,values=court_options,style="Custom.TCombobox")
+        label_court.grid(row=self.row_no, column=0, padx=(2,5), pady=10, sticky='e')
+        self.combo_court_name =ttk.Combobox(self,values=court_options,style="Custom.TCombobox",width=20)
         self.combo_court_name.config(background='white')
-        self.combo_court_name.grid(row=self.row_no,column=1,padx=(10),pady=10,sticky='e')
+        self.combo_court_name.grid(row=self.row_no,column=1,padx=(5,0),pady=10,sticky='w')
         self.grid_columnconfigure(0,weight=0)
-        self.combo_court_name.set("Medway")      
-
+        self.grid_columnconfigure(1, weight=1)
+        #self.combo_court_name.config(relief="solid")         
         
         self.row_no +=1
         
-        #The CASE NAME
-        # label_case_name=tk.Label(self,text="Case Name",font=theFont,anchor='e')
-        # label_case_name.config(bg="white", fg=FOREGROUND_COLOUR)
-        # label_case_name.grid(row=self.row_no,column=0,padx=0,pady=10,sticky='e')
-        # self.entry_case_name=tk.Entry(self,background="white",fg=FOREGROUND_COLOUR)
-        # self.entry_case_name.grid(row=self.row_no,column=1,padx=(10),pady=(10),sticky='w')
         
-
-         
-        
-       # self.row_no +=1
          #THE CASE NUMBER
         
         case_number_lbl =tk.Label(self,text="Case Number",font=('Helvetica',12),anchor='e',width=20)
@@ -316,7 +320,7 @@ class Case (BasePage,tk.Frame):
         #THE APPLICATION
         application_label=tk.Label(self,text='Application Made',font=('Helvetica',12),anchor='e',width=20)
         application_label.config(bg=BACKGROUND_COLOUR, fg=FOREGROUND_COLOUR)
-        application_label.grid(row=self.row_no,column=0,padx=(10,10),pady=10,sticky='w')
+        application_label.grid(row=self.row_no,column=0,padx=(10,10),pady=10,sticky='e')
         self.combo_application=ttk.Combobox(self,values=applications,style="Custom.TCombobox")
         self.combo_application.grid(row=self.row_no,column=1,padx=(10,10),pady=10,sticky='w')
         self.row_no +=1
@@ -331,12 +335,16 @@ class Case (BasePage,tk.Frame):
         self.row_no+=1
         
         
+       
+        self.row_no+=1
+        
+        
         
           #THE JUDGE TITLE
         judge_options=["District Judge","Deputy District Judge","Recorder","Circuit Judge","High Court Judge","Deputy High Court Judge"]
         label_judge_title=tk.Label(self, text="Judge Title", font=theFont,anchor='e')
         label_judge_title.config(bg=BACKGROUND_COLOUR, fg=FOREGROUND_COLOUR)
-        label_judge_title.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='e')
+        label_judge_title.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
 
         self.combo_judge_rank= ttk.Combobox(self, values=judge_options,style='Custom.TCombobox')
         self.combo_judge_rank.set("Deputy District Judge")
@@ -384,6 +392,10 @@ class Case (BasePage,tk.Frame):
         self.bottom_frame.grid_columnconfigure(0,weight =1)
         self.bottom_frame.grid_columnconfigure(1,weight=1)
         self.fill_widgets()
+        
+    def app_secret():
+        pass
+    
     def on_show(self):
         if case_details.judge_rank:
             self.combo_judge_rank=case_details.judge_rank
@@ -616,6 +628,8 @@ class Applicant(BasePage,tk.Frame):
         surname_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
         self.surname_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
         self.row_no +=1
+        
+        
         gender_label=tk.Label(self.input_frame,text="Gender",font=('Helvetica',12))
         gender_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         self.gender_combo=ttk.Combobox(self.input_frame,values=["Male","Female"],style="Custom.TCombobox")
@@ -625,7 +639,6 @@ class Applicant(BasePage,tk.Frame):
         self.gender_combo.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
         self.applicant_widgets.append(self.gender_combo)
 
-        
         
         self.row_no+=1
         add1_label=tk.Label(self.input_frame,text="Address 1", font=("Helvetica",12))
@@ -643,7 +656,7 @@ class Applicant(BasePage,tk.Frame):
         self.add2_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
         self.add2_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
         self.row_no+=1
-        #Town/City
+            #Town/City
         town_label=tk.Label(self.input_frame,text="Town/City", font=("Helvetica",12))
         town_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         self.town_entry =tk.Entry(self.input_frame,background="white",fg=FOREGROUND_COLOUR)
@@ -651,8 +664,8 @@ class Applicant(BasePage,tk.Frame):
         town_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
         self.town_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
         self.row_no+=1
-        
-        #PostCode
+            
+            #PostCode
         postcode_label=tk.Label(self.input_frame,text="Post Code", font=("Helvetica",12))
         postcode_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         self.postcode_entry =tk.Entry(self.input_frame,background="white",fg=FOREGROUND_COLOUR)
@@ -661,15 +674,7 @@ class Applicant(BasePage,tk.Frame):
         self.postcode_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
         self.check_var=tk.IntVar()
 
-        self.is_family_hom=tk.Checkbutton(self.input_frame,text="Tick if FMH",variable=self.check_var)
-        self.is_family_hom.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
-        self.applicant_widgets.append(self.check_var)
-        if test_run==True:
-            self.check_var.set(True)
-            
-        
-        self.is_family_hom.grid(row=self.row_no,column=2,padx=(10,10),pady=10,sticky='w')
-        self.row_no+=1
+       
        
        
       
@@ -1231,6 +1236,7 @@ class Hearing(BasePage,tk.Frame):
 
         
     def last_action(self):
+            temp ='emp'
             self.update()
             self.controller.last_page()
             
@@ -1532,7 +1538,9 @@ class  Children(BasePage,tk.Frame):
             case_details.children.clear()
             
         if case_details:
-            t =case_details.respondent.last_name
+            if len(case_details.children)==0:
+                t =case_details.respondent.last_name
+            
         self.child_widgets['name2'].insert(0,t)
             
         
@@ -1552,6 +1560,9 @@ class  Children(BasePage,tk.Frame):
         self.child_widgets_list.clear()
         self.controller.next_page()
         
+    def lowest_date():
+        pass
+    
     def update(self):
         #case_details.children.clear()
         for widgets in self.child_widgets_list:
@@ -1567,6 +1578,8 @@ class  Children(BasePage,tk.Frame):
             child=Child(name1,name2,gender,birthday_date_object)
             
             case_details.children.append(child)
+            for child in case_details.children:
+                child.sentence=f"{child.first_name} {child.last_name}, a {child.gender} born on {birthday}." 
             
         for widget_dict in self.child_widgets_list:
             for widget in widget_dict.values():
@@ -2495,6 +2508,10 @@ class Duration(BasePage,tk.Frame):
         self.comb_effect.current(0)
         self.combo_or_last.current(3)
         
+    def update(self):
+        pass
+    
+        
     
     def last_action(self):
         self.update()
@@ -2644,8 +2661,12 @@ class Actions(BasePage,tk.Frame):
     def produce_order(self):
         write_order(case_details=case_details)
         
-    def save_file():
-        pass
+    def save_file(self):
+        self.case_details.name_file()
+        suffix ='.ord'
+        file_name =case_details.file_name+suffix
+        with open(file_name, 'wb') as file:
+            pickle.dump(case_details, file)
     
         
 #HEADER
@@ -2717,10 +2738,10 @@ class Further_Info(BasePage,tk.Frame):
         self.title_label.grid(row=self.row_no,column=0,padx=0,pady=0,sticky='w')
         
         self.row_no+=1
-        add1_label=tk.Label(self.input_frame,text="Address 1", font=("Helvetica",12))
-        add1_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.add1_label=tk.Label(self.input_frame,text="Address 1", font=("Helvetica",12))
+        self.add1_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         self.add1_entry=tk.Entry(self.input_frame,background="white",fg=FOREGROUND_COLOUR)
-        add1_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
+        self.add1_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
         self.applicant_widgets.append(self.add1_entry)
 
         self.add1_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
@@ -2775,6 +2796,13 @@ class Further_Info(BasePage,tk.Frame):
         pass
 
     def update(self):
+        if self.chk_consent==True:
+            case_details.consent_order=True
+            
+        case_details.effective =  self.comb_effect.get()
+        case_details.order_last= self.combo_or_last.get()
+       
+           
         
         pass
 
