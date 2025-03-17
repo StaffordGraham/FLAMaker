@@ -29,7 +29,7 @@ import sys
 case_details=CaseDetails()
 applicant =Person
 respondent = Person
-standard_orders_only=True
+standard_orders_only=False
 
 
 
@@ -40,6 +40,7 @@ BACKGROUND_COLOUR="#FFFFCC"
 FOREGROUND_COLOUR="#0000FF"
 theFont=("Helvetica", 16)
 bigFont=("Helvetica", 24)
+placeholder_Font=("Helvetica",12,"italic")
 
 
              
@@ -1041,15 +1042,15 @@ class Hearing(BasePage,tk.Frame):
         
         self.row_no+=1
         
-        def clear_placeholder(self,event,entry,placeholder):
+        def clear_placeholder(event,entry,placeholder):
             if entry.get()==placeholder:
                 entry.delete(0,tk.END)
-                entry.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+                entry.config(bg="white",fg=FOREGROUND_COLOUR,font=placeholder_Font)
             
         def add_placeholder(event,entry,placeholder):
             if entry.get()=='':
                 entry.insert(0,placeholder)
-                entry.config(FOREGROUND_COLOUR='gray',font=('Helvetica',10,'italic'))
+                entry.config(fg='gray',font=placeholder_Font)
         
         #:THE FRAME CONTAINING THE INPUT WIDGETS       
         self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
@@ -1150,8 +1151,8 @@ class Hearing(BasePage,tk.Frame):
         self.applic_appearance_combo.grid(row=self.row_no,column=0,padx=(10,10),pady=10, sticky='w')
         self.applic_rep_title=ttk.Combobox(self.input_frame,values=titles)
         self.applic_rep_title.config(background=BACKGROUND_COLOUR,foreground=FOREGROUND_COLOUR,width=5)
-        rep_name_pholder="Enter Applicant's Representative Name"
-        self.applic_rep_name=tk.Entry(self.input_frame,bg='white',fg='gray',font=theFont)
+        rep_name_pholder="Applicant's Representative"
+        self.applic_rep_name=tk.Entry(self.input_frame,bg='white',fg='dark grey',font=placeholder_Font)
         placeholderA='Enter name of applicant representative'
         self.applic_rep_name.insert(0,placeholderA)
 
@@ -1609,8 +1610,8 @@ class  Children(BasePage,tk.Frame):
         if case_details:
             if len(case_details.children)==0:
                 t =case_details.respondent.last_name
-            
-        self.child_widgets['name2'].insert(0,t)
+                if t!='':
+                    self.child_widgets['name2'].insert(0,t)
             
         
         
