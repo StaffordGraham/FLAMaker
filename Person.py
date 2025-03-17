@@ -90,7 +90,16 @@ class Person:
             self.possessive='her'
             
     
-    
+    def set_full_name(self):
+        if self.party=='Applicant' or self.party=='Respondent':
+
+            self.full_name=f"{self.first_name} {self.last_name}"
+        else:
+            self.full_name=f"{self.title} {self.last_name}"
+            tip='tap'
+        
+        
+        
     def set_family_home(self):
         full_address = f" {self.address_building_and_street}, {self.address_second_line}, {self.address_town_or_city}, {self.address_postcode}"
         self.full_address=full_address

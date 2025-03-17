@@ -29,6 +29,7 @@ import sys
 case_details=CaseDetails()
 applicant =Person
 respondent = Person
+standard_orders_only=True
 
 
 
@@ -37,7 +38,7 @@ respondent = Person
 #FONTS & STYLES
 BACKGROUND_COLOUR="#FFFFCC"
 FOREGROUND_COLOUR="#0000FF"
-theFont=("Helvetica", 12)
+theFont=("Helvetica", 16)
 bigFont=("Helvetica", 24)
 
 
@@ -72,13 +73,15 @@ class MultiPage(tk.Tk):
         super().__init__()
         style=ttk.Style()
         style.theme_use('winnative')
-        test_var = case_details.case_name
         self.pages=[Case]
         self.title("FlAgpole")
         self.geometry("880x550")
         self.container=ttk.Frame(self)
         self.container.pack(fill='both',expand=True)
-        self.pages=[Start,Case,Applicant,Respondent,Children,Hearing,OccOrders,NonMols,Duration, Further_Info,Actions]
+        if standard_orders_only==True:
+            self.pages=[Start,Case,all_Orders,Applicant,Respondent,Children,Hearing,Duration, Actions]
+        else:
+            self.pages=[Start,Case,NonMols,OccOrders,Applicant,Respondent,Children,Hearing,Duration, Actions]
         self.current_page_index=0
 
 
@@ -280,6 +283,7 @@ class Case (BasePage,tk.Frame):
         page_title=tk.Label(self.top_frame,text="The Case ",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         self.top_frame.grid_columnconfigure(0,weight=1)
         page_title.grid(row=self.row_no,column=0, padx=0,pady=10,sticky='ew')
+        self.top_frame.bind("<Double-1>",self.on_double_click)
 
 
         self.row_no+=1
@@ -391,6 +395,10 @@ class Case (BasePage,tk.Frame):
         next_button.grid(row=1,column=1,padx=10,pady=(0,10), sticky='e')
         self.bottom_frame.grid_columnconfigure(0,weight =1)
         self.bottom_frame.grid_columnconfigure(1,weight=1)
+        self.bottom_frame.bind("<Double-1>",self.on_double_click)
+        self.fill_widgets()
+        
+    def on_double_click(self,event):
         self.fill_widgets()
         
     def app_secret():
@@ -408,13 +416,20 @@ class Case (BasePage,tk.Frame):
         if case_details.judge_name:
             self.entry_judge_name=case_details.judge_name
         else:
-            self.entry_judge_name="Campbell"
+            self.entry_judge_name="Compbell"
+            
+        if case_details.case_number:
+            self.entry_case_number=case_details.case_number
+        else:
+            self.entry_case_number="ME 25 0924"
         
     def update_bottom_frame_width(self,event=None):
        self.bottom_frame.place_configure(width=self.winfo_width())
        
  
-        
+    def on_double_click(self,event):
+        pass
+            
     def update(self):
 
         
@@ -598,6 +613,7 @@ class Applicant(BasePage,tk.Frame):
         self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
         self.input_frame.grid(row=1,column=0,sticky='w')
         self.input_frame.grid_columnconfigure(0,weight=0)
+        self.input_frame.bind("<Double-1>",self.on_double_click)
        
         self.row_no+=1
        
@@ -719,7 +735,8 @@ class Applicant(BasePage,tk.Frame):
        
        
 
-        
+    def on_double_click(self,event):
+        self.fill_widgets()
     def fill_widgets(self):
         if test_run==True:
             for widget in self.applicant_widgets:
@@ -771,6 +788,8 @@ class Applicant(BasePage,tk.Frame):
         case_details.applicant.address_postcode=self.postcode_entry.get()
         
         case_details.applicant.set_pronouns()
+        case_details.applicant.set_full_name()
+        case_details.applicant.set_family_home()
         temp_var=self.check_var.get()
         if temp_var==1:
             par_var = (f" The 'family home' is the property at {case_details.applicant.address_building_and_street}, "
@@ -822,6 +841,7 @@ class Respondent(BasePage,tk.Frame):
         self.widget_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
         self.widget_frame.grid(row=1,column=0,sticky='nsew')
         self.widget_frame.grid_columnconfigure(0,weight=0)
+        self.widget_frame.bind("<Double-1>",self.on_double_click)
         
         
         
@@ -907,9 +927,14 @@ class Respondent(BasePage,tk.Frame):
         next_button.grid(row=1,column=1,padx=10,pady=(0,10), sticky='e')
         self.bottom_frame.grid_columnconfigure(0,weight =1)
         self.bottom_frame.grid_columnconfigure(1,weight=1)
+        #self.fill_widgets()
+       
+    def on_double_click(self,event):
+        print ('in double click')
         self.fill_widgets()
-       
-       
+        
+   
+    
     def on_show(self):
         if case_details.respondent.title=="":
             self.combo_title.set('Mr')
@@ -945,7 +970,7 @@ class Respondent(BasePage,tk.Frame):
                     widget.delete(0,tk.END)
             self.combo_title.set('Mr')
             self.first_name_entry.insert(0,'Charles')
-            self.surname_entry.insert(0,'Buckmaster')
+            self.surname_entry.insert(0,'Ashes')
             self.gender_combo.set('Male')
 
             self.add1_entry.insert(0,'The Bridges')
@@ -978,6 +1003,7 @@ class Respondent(BasePage,tk.Frame):
         case_details.respondent.address_town_or_city=self.town_entry.get()
         case_details.respondent.address_postcode=self.postcode_entry.get()
         case_details.respondent.set_pronouns()
+        case_details.respondent.set_full_name()
         
          
          
@@ -995,6 +1021,8 @@ class Hearing(BasePage,tk.Frame):
         self.notice_row_no=0
         self.grid(sticky='w')
         self.grid_columnconfigure(0,weight=0)
+        
+   
        
         listed_for_values=['Interim Hearing','Final Hearing','Directions Hearing']
         
@@ -1013,6 +1041,16 @@ class Hearing(BasePage,tk.Frame):
         
         self.row_no+=1
         
+        def clear_placeholder(self,event,entry,placeholder):
+            if entry.get()==placeholder:
+                entry.delete(0,tk.END)
+                entry.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+            
+        def add_placeholder(event,entry,placeholder):
+            if entry.get()=='':
+                entry.insert(0,placeholder)
+                entry.config(FOREGROUND_COLOUR='gray',font=('Helvetica',10,'italic'))
+        
         #:THE FRAME CONTAINING THE INPUT WIDGETS       
         self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
         self.input_frame.grid(row=self.row_no,column=0,sticky='w')
@@ -1020,6 +1058,8 @@ class Hearing(BasePage,tk.Frame):
         self.input_frame.grid_columnconfigure(1,weight=0)
         self.input_frame.grid_columnconfigure(2,weight=0)
         self.input_frame.grid_columnconfigure(3,weight=0)
+        
+        
         
         #THE DATE
         now=datetime.now()
@@ -1095,34 +1135,61 @@ class Hearing(BasePage,tk.Frame):
         
         
         #SEPARATOR
+        app_appearance_values = ['Applicant in person','Applicant represented by ','no appeance by Applicant']
+        resp_appearance_values =['Respondent in person','Respondent represented by','no appearance by Respondent']
         
+        #REPRESENTATION
+        label_appearance=tk.Label(self.input_frame,text="Appearing at this Hearing",font=theFont,anchor='w')
+        label_appearance.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        label_appearance.grid(row=self.row_no,column=0,padx=0,pady=0,sticky='w')
+        self.row_no+=2
+        self.applic_appearance_combo=ttk.Combobox(self.input_frame,values=app_appearance_values)
+        self.applic_appearance_combo.config(background=BACKGROUND_COLOUR,foreground=FOREGROUND_COLOUR,width=20)
+        placeholder = app_appearance_values[0]
+        self.applic_appearance_combo.set(placeholder)
+        self.applic_appearance_combo.grid(row=self.row_no,column=0,padx=(10,10),pady=10, sticky='w')
+        self.applic_rep_title=ttk.Combobox(self.input_frame,values=titles)
+        self.applic_rep_title.config(background=BACKGROUND_COLOUR,foreground=FOREGROUND_COLOUR,width=5)
+        rep_name_pholder="Enter Applicant's Representative Name"
+        self.applic_rep_name=tk.Entry(self.input_frame,bg='white',fg='gray',font=theFont)
+        placeholderA='Enter name of applicant representative'
+        self.applic_rep_name.insert(0,placeholderA)
+
+        self.applic_rep_name.bind("<FocusIn>",lambda  event, e=self.applic_rep_name,p=placeholderA: clear_placeholder(event,e,p))
+        self.applic_rep_name
+        self.applic_rep_title.grid(row=self.row_no,column=1,padx=0,pady=0,sticky='w')
+        titplac=titles[0]
+        self.applic_rep_title.set(titplac)
+        self.applic_rep_name.grid(row=self.row_no,column=2,padx=0,pady=0,sticky='w')
         
+        self.row_no+=1
+        self.resp_appearance_combo=ttk.Combobox(self.input_frame,values=resp_appearance_values)
+        self.resp_appearance_combo.config(background=BACKGROUND_COLOUR,foreground=FOREGROUND_COLOUR)
+        placeholder=resp_appearance_values[2]
+        self.resp_appearance_combo.grid(row=self.row_no, column=0, padx=(10,10),pady=0,sticky='w')
+        self.resp_appearance_combo.set(placeholder)
+        self.resp_rep_title=ttk.Combobox(self.input_frame,values=titles)
+        self.resp_rep_title.set(titplac)
+        self.resp_rep_title.config(background=BACKGROUND_COLOUR,foreground=FOREGROUND_COLOUR,width=5)
+        self.resp_rep_name=tk.Entry(self.input_frame,bg='white',fg=FOREGROUND_COLOUR,font=theFont)
+        self.resp_rep_title.grid(row=self.row_no,column=1,padx=0,pady=0,sticky='w')
+        self.resp_rep_name.grid(row=self.row_no,column=2,padx=0,pady=0,sticky='w')
+        
+
         
         #APPLICANT REPRESENTATIVE
-        label_app_rep=tk.Label(self,text="Applicant Representative",font=theFont,anchor='w')
-        label_app_rep.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
-        label_app_rep.grid(row=self.row_no,column=0,padx=0,pady=0,sticky='w')
-        self.combo_app_rep_title  = ttk.Combobox(self,values=titles,style="Custom.TCombobox",width=5)
-        self.combo_app_rep_title.grid(row=self.row_no,column=1,padx=(0),pady=(10),sticky='w')
-        self.entry_app_repN1 =tk.Entry(self,font=("Helvetica, 16"),width=10)
-        self.entry_app_repN1.grid(row=self.row_no,column=2,padx=(0),pady=(10))
-        self.entry_app_repN2 =tk.Entry(self,font=("Helvetica, 16"),width=10)
-        self.entry_app_repN2.grid(row=self.row_no,column=2,padx=(0),pady=(10))
+        
        
         self.row_no+=1
         
         #RESPONDENT REPRESENTATIVE
         
-        label_resp_rep=tk.Label(self,text="Respondent Representative",font=theFont,anchor='w')
-        label_resp_rep.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
-        label_resp_rep.grid(row=self.row_no,column=0,padx=0,pady=10,sticky ='w')
-        self.combo_resp_rep_title=ttk.Combobox(self,values=titles,style="Custom.TCombobox",width=5)
-        self.combo_resp_rep_title.grid(row=self.row_no,column=1,padx=0,pady=10,sticky='w')
-        self.combo_app_rep_title.set('Mr')
-        self.entry_resp_repN1 =tk.Entry(self,font=("Helvetica, 16"),width=10)
-        self.entry_resp_repN1.grid(row=self.row_no,column=2,padx=0,pady=(10))
-        self.entry_resp_repN2 =tk.Entry(self,font=("Helvetica, 16"),width=10)
-        self.entry_resp_repN2.grid(row=self.row_no,column=3,padx=0,pady=(10))
+        # label_resp_rep=tk.Label(self,text="Respondent Representative",font=theFont,anchor='w')
+        # label_resp_rep.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        # label_resp_rep.grid(row=self.row_no,column=0,padx=0,pady=10,sticky ='w')
+        # self.combo_resp_rep_title=ttk.Combobox(self,values=titles,style="Custom.TCombobox",width=5)
+        # self.combo_resp_rep_title.grid(row=self.row_no,column=1,padx=0,pady=10,sticky='w')
+       
         self.row_no+=1
         self.bind("<Double-1>",self.on_double_click)
 
@@ -1153,7 +1220,13 @@ class Hearing(BasePage,tk.Frame):
         frame=tk.Frame(parent,bg=BACKGROUND_COLOUR)
         frame.grid(row=self.row_no,column=0)
         
-        self.fill_widgets()
+   
+        
+        
+            
+            
+        
+        #self.fill_widgets()
         
     def another_witness():
         pass
@@ -1179,6 +1252,8 @@ class Hearing(BasePage,tk.Frame):
             self.wit_name1_text.grid()
             self.dated_label.grid()
             self.stat_date.grid()
+            wit_name=case_details.applicant.full_name
+            self.wit_name1_text.insert(0,wit_name)
             
             
 
@@ -1221,16 +1296,16 @@ class Hearing(BasePage,tk.Frame):
             
             
         self.combo_reasons.set(case_details.reasons)
-        self.combo_app_rep_title.set(case_details.app_rep.title)
-        self.entry_app_repN1.delete(0,'end')
-        self.entry_app_repN1.insert(0,case_details.app_rep.first_name)  
-        self.entry_app_repN2.delete(0,'end')
-        self.entry_app_repN2.insert(0,case_details.app_rep.last_name)
-        self.combo_resp_rep_title.set(case_details.resp_rep.title)
-        self.entry_resp_repN1.delete(0,'end')
-        self.entry_resp_repN1.insert(0,case_details.resp_rep.first_name)
-        self.entry_resp_repN2.delete(0,'end')
-        self.entry_resp_repN2.insert(0,case_details.resp_rep.last_name)
+        # self.combo_app_rep_title.set(case_details.app_rep.title)
+        # self.entry_app_repN1.delete(0,'end')
+        # self.entry_app_repN1.insert(0,case_details.app_rep.first_name)  
+        # self.entry_app_repN2.delete(0,'end')
+        # self.entry_app_repN2.insert(0,case_details.app_rep.last_name)
+        # self.combo_resp_rep_title.set(case_details.resp_rep.title)
+        # self.entry_resp_repN1.delete(0,'end')
+        # self.entry_resp_repN1.insert(0,case_details.resp_rep.first_name)
+        # self.entry_resp_repN2.delete(0,'end')
+        # self.entry_resp_repN2.insert(0,case_details.resp_rep.last_name)
 
 
 
@@ -1251,13 +1326,11 @@ class Hearing(BasePage,tk.Frame):
         case_details.hearing_date_object=hearing_date_object
         l_for =self.comb_listed_for.current()
         case_details.notice=self.combo_notice.get()
-        case_details.app_rep.title =self.combo_app_rep_title.get()
-        case_details.app_rep.first_name=self.entry_app_repN1.get()
-        case_details.app_rep.last_name= self.entry_app_repN2.get()
+        case_details.app_rep.set_full_name()
+        
+        
          
-        case_details.resp_rep.title =self.combo_resp_rep_title.get()
-        case_details.resp_rep.first_name=self.entry_resp_repN1.get()
-        case_details.resp_rep.last_name= self.entry_resp_repN2.get()
+       
         
          
 
@@ -1275,12 +1348,7 @@ class Hearing(BasePage,tk.Frame):
             self.comb_listed_for.set('Interim Hearing')
             self.combo_notice.set('On Notice')
             self.combo_reasons.set(self.reasons[1])
-            self.combo_app_rep_title.set('Ms')
-            self.entry_app_repN1.insert(0,'Charlotte')  
-            self.entry_app_repN2.insert(0,'Proudman')
-            self.combo_resp_rep_title.set('Mr')
-            self.entry_resp_repN1.insert(0,'Fred')
-            self.entry_resp_repN2.insert(0,'Flintstone')
+           
 
 
 
@@ -1442,11 +1510,12 @@ class  Children(BasePage,tk.Frame):
     def fill_widgets(self):
         
             widget_values=[]
-            child1=('Arthur','Simpson','boy','01','01','2021')
+            the_surname=case_details.respondent.last_name
+            child1=('Arthur',the_surname,'boy','01','01','2021')
             widget_values.append(child1)
-            child2=('Belinda','Simpson','girl','02','02','2022')
+            child2=('Belinda',the_surname,'girl','02','02','2022')
             widget_values.append(child2)
-            child3=('Charlie','Simpson','boy','03','03','2020')
+            child3=('Charlie',the_surname,'boy','03','03','2020')
             widget_values.append(child3)
             x = len(widget_values)
             y=len(self.child_widgets_list)
@@ -2017,6 +2086,106 @@ class Undertakings(BasePage,tk.Frame):
             "be false or did not believe to be true'")
             case_details.undertakings.append(parpar)
             
+            
+class all_Orders(BasePage):
+    def __init__(self, parent, controller, case_details):
+        super().__init__(parent, controller, case_details)
+        tk.Frame.__init__(self,parent)
+        self.case_details=case_details
+        self.controller=controller
+        self.config(bg=BACKGROUND_COLOUR)    
+        self.grid_columnconfigure(0,weight=1)
+        self.widgets_list=[]
+        self.row_no=1
+		
+#TITLE Frame
+
+        self.top_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
+        self.top_frame.grid(row=0,column=0,sticky='ew')
+        page_title=tk.Label(self.top_frame,text="Orders ",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.top_frame.grid_columnconfigure(0,weight=1)
+        page_title.grid(row=self.row_no,column=0, padx=0,pady=10,sticky='ew')
+		
+#WIDGET Frame
+        
+        self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
+        self.input_frame.grid(row=1,column=0,sticky='w')
+        self.input_frame.grid_columnconfigure(0,weight=0)
+        self.row_no+=1
+        
+        checkbox_var = tk.IntVar()
+        non_mol_checkbox = tk.Checkbutton(self.input_frame, text="Standard Non Mol", variable=checkbox_var)
+        non_mol_checkbox.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+        non_mol_checkbox.grid(row=self.row_no, column=0, padx=10, pady=10,sticky='w')
+        self.row_no+=1
+        
+        checkbox_var = tk.IntVar()
+        non_com_checkbox = tk.Checkbutton(self.input_frame, text="Standard No Communicate", variable=checkbox_var)
+        non_com_checkbox.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+        non_com_checkbox.grid(row=self.row_no, column=0, padx=10, pady=10,sticky='w')
+        self.row_no+=1
+        
+        checkbox_var = tk.IntVar()
+        kid_non_mol_checkbox = tk.Checkbutton(self.input_frame, text="Standard Non Mol Children", variable=checkbox_var)
+        kid_non_mol_checkbox.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+        kid_non_mol_checkbox.grid(row=self.row_no, column=0, padx=10, pady=10,sticky='w')
+        self.row_no+=1
+        
+        
+        checkbox_var = tk.IntVar()
+        ouster_checkbox = tk.Checkbutton(self.input_frame, text="Standard Ouster", variable=checkbox_var)
+        ouster_checkbox.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+        ouster_checkbox.grid(row=self.row_no, column=0, padx=10, pady=10,sticky='w')
+        self.row_no+=1
+        
+        checkbox_var = tk.IntVar()
+        allow_entry_checkbox = tk.Checkbutton(self.input_frame, text="Standard Allow Entry", variable=checkbox_var)
+        allow_entry_checkbox.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+        allow_entry_checkbox.grid(row=self.row_no, column=0, padx=10, pady=10,sticky='w')
+        self.row_no+=1
+        
+        checkbox_var = tk.IntVar()
+        zonal_checkbox = tk.Checkbutton(self.input_frame, text="Standard Zonal", variable=checkbox_var)
+        zonal_checkbox.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+        zonal_checkbox.grid(row=self.row_no, column=0, padx=10, pady=10,sticky='w')
+        self.row_no+=1
+        
+
+
+#NEXT AND BACK BUTTON Frame
+
+        self.bottom_frame=tk.Frame(self,bg=BACKGROUND_COLOUR,height=50)
+        self.bottom_frame.place(relx=0.5,rely=1.0,anchor='s',y=-20)
+        self.bind("<Configure>", self.update_bottom_frame_width)  # Bind resize event
+
+        back_button=tk.Button(self.bottom_frame,text="Back",command=self.back_step)
+        next_button =tk.Button(self.bottom_frame, text="Next",command=self.front_step)
+        back_button.grid(row=1,column=0,padx=10,pady=(0,10),sticky='w')
+        next_button.grid(row=1,column=1,padx=10,pady=(0,10), sticky='e')
+        self.bottom_frame.grid_columnconfigure(0,weight =1)
+        self.bottom_frame.grid_columnconfigure(1,weight=1)
+
+#FUNCTIONS
+
+    def update_bottom_frame_width(self,event=None):
+       self.bottom_frame.place_configure(width=self.winfo_width())
+        
+
+    def on_show(self):
+        pass
+
+    def update(self):
+        pass
+
+    def back_step(self):
+        self.update(self)
+        self.controller.last_page()
+
+    def front_step(self):
+        self.update(self)
+        self.controller.next_page()
+        
+            
     
 class OccOrders(BasePage):
     
@@ -2114,98 +2283,13 @@ class OccOrders(BasePage):
     def on_show(self):
         pass
     def update(self):
-        
-        
-        
-        from datetime import date, timedelta
-        app_name=[]
-        app_name1 =case_details.applicant.first_name
-        app_name2=case_details.applicant.last_name
-        app_name=app_name1+" "+app_name2
-        resp_name1=case_details.respondent.first_name
-        resp_name2=case_details.respondent.last_name
-        resp_name=resp_name1+" "+resp_name2
-              
-        mat_home1=case_details.applicant.address_building_and_street
-        mat_home2=case_details.applicant.address_second_line
-        mat_home3=case_details.applicant.address_town_or_city
-        mat_home4=case_details.applicant.address_postcode
-        mat_home=mat_home1+", "+mat_home2+", "+mat_home3+", "+mat_home4
-        relat=case_details.relationship
-        tody=date.today()
-        leave_date = tody + timedelta(days=7)
-        leave_date=leave_date.strftime("%d %B %Y")
-        
-        self.ord_dict={}
-        key = "Declaration of Mat Home Rights"
-        value =(
-            f"The court declares that the applicant "
-         f"{app_name}, has home rights in {mat_home}."
-         )
-        
-        self.ord_dict[key]=value
-        
-        key="Mat Home Rights Survive Divorce"
-        value=(f"The court declares that the {app_name}'s "
-        f"home rights in {mat_home} shall not end when the respondent {resp_name}"
-        f" dies or their {relat.lower()} is dissolved and shall continue until "
-        f"the determination of the applicant's financial provision claims or a further order is made."
-        )
-        self.ord_dict[key]=value
-        
-        key="R Allow Occupy  of Mat Home"
-        value =(f"The respondent, {resp_name}, shall allow the applicant, {app_name}, "
-        f"to occupy the property at {mat_home}."
-    
-        )
-        self.ord_dict[key]=value
-        
-        key="R Must Not Occupy Mat Home"
-        value=(f"The respondent, {resp_name}, must not occupy the property at {mat_home}"
-        )
-        self.ord_dict[key]=value
-        
-        key="R leave Mat Home"
-        value =(f"The respondent {resp_name}, shall leave the property at {mat_home}  by "
-        f"4:00 pm on {leave_date}"
-        )
-        self.ord_dict[key]=value
-        
-        key ="R Not Return to Mat Home"
-        value=(f"Having left {mat_home}, the respondent {resp_name}, "
-        "must not return to, enter or attempt to enter it."
-        )
-        self.ord_dict[key]=value
-        
-        key="Not Obstruct A's Occupation"
-        value =(f"The Respondent {resp_name}, must not obstruct, harass, or interfere with the "
-        f"applicant {app_name}'s peaceful occupation of {mat_home}"
-        )
-        self.ord_dict[key]=value
-        
-        key="Right of Entry"
-        value=(f"The applicant {app_name} has the right to enter into and occupy  the {mat_home} "
-        f" and the respondent {resp_name},shall allow the applicant to do so."
-        )
-        self.ord_dict[key]=value
-        
-        key="Right Not to be Evicted"
-        value=(f"The applicant {app_name}, has the right not to be evicted or excluded from, and the "
-        f"respondent {resp_name}, must not evict or exclude the applicant from {mat_home}"
-        )
-        self.ord_dict[key]=value
-        
-        
-        for text,var in zip(self.checkbox_texts_col1,self.checkbox_col1_vars):
-            
-            if var.get()==1:
+        for i, var in enumerate(self.checkbox_col1_vars):
+            if var.get() == 1:  # If the checkbox is checked
+                case_details.order_choices.append(self.checkbox_texts_col1[i])
                 
-                case_details.orders.append(self.ord_dict[text])
-                
-        for text,var in zip(self.checkbox_texts_col2,self.checkbox_col2_vars):
-            if var.get()==1:
-                if text:
-                    case_details.orders.append(self.ord_dict[text])
+      
+        
+        
         
         
 
@@ -2304,116 +2388,22 @@ class NonMols(BasePage):
     def on_show(self):
         pass
     def update(self,controller):
+        #The following puts the checkbox text of ticked checkboxes in the list case_details.order_choices
+        for i, var in enumerate(self.checkbox_col1_vars):
+            if var.get() == 1:  # If the checkbox is checked
+                 case_details.order_choices.append(self.checkbox_texts_col1[i])
         
         
         
-        from datetime import date, timedelta
-        app_name=[]
-        app_name1 =case_details.applicant.first_name
-        app_name2=case_details.applicant.last_name
-        app_name=app_name1+" "+app_name2
-        resp_name1=case_details.respondent.first_name
-        resp_name2=case_details.respondent.last_name
-        resp_name=resp_name1+" "+resp_name2
-              
-        mat_home1=case_details.applicant.address_building_and_street
-        mat_home2=case_details.applicant.address_second_line
-        mat_home3=case_details.applicant.address_town_or_city
-        mat_home4=case_details.applicant.address_postcode
-        mat_home=mat_home1+", "+mat_home2+", "+mat_home3+", "+mat_home4
-        relat=self.case_details.relationship
-        if len(case_details.children)==1:
-            kidno="child"
-            
-        if len (case_details.children)>1:
-            kidno="children"
-            
-        school_address= ""
-            
         
-        tody=date.today()
-        leave_date = tody + timedelta(days=7)
-        
-        self.ord_dict={}
-        key = "Use or threaten violence"
-        value =(
-            f"The respondent {resp_name} must not use or threaten violence against the applicant {app_name}"
-         f" and must not instruct, encourage or in any way suggest any other person should do so."
-         )
-        
-        self.ord_dict[key]=value
-        
-        key="Not intimidate,harass or pester"
-        value=(f"The respondent {resp_name} must not intimidate, harass or pester the applicant {app_name} "
-                f" and must not instruct, encourage or in any way suggest any other person should do so."
-        )
-        self.ord_dict[key]=value
-        
-        key="Not communicate"
-
-        value =(f"The respondent, {resp_name}, must not telephone, text, email or otherwise contact"
-                f" the applicant {app_name}, including via social networking websites or other forms of "
-                f"electronic messaging."   
-        )
-        self.ord_dict[key]=value
-        
-        key="Not damage property"
-        value=(f"The respondent, {resp_name}, must not damage, attempt to damage or threaten to damage"
-               f"any property owned by or in the possession or controlof the applicant {app_name},"
-               f"and must not instruct,encourage or in any way suggest that any other person should do so."
-        )
-        self.ord_dict[key]=value
-        
-        key="Not damage family home"
-        value =(f"The respondent {resp_name}, must not damage, attempt to damage or threaten to damage"
-                f"the property or contents of {mat_home} and must not instruct, encourage or in any way suggest"
-                f"that any other person should do so."
-              
-        )
-        self.ord_dict[key]=value
-        
-        key ="Not Enter family home"
-
-        value=(f"The respondent {resp_name}, must not go to, enter or attempt to enter {mat_home} or "
-               f" any property where {case_details.respondent.nominative} believes the applicant {app_name}"
-               f" to be living."
-        )
-        
-        self.ord_dict[key]=value
-        key="Non mol zonal"
-        self.ord_dict[key]=value
-        value=(f" The respondent {resp_name} must not approach within 100 meters of the {mat_home}"
-        )
-        
-        key="Not intimidate, harass or pester children"
-
-        value =(f"The Respondent {resp_name}, must not use or threaten violence against the relevant {kidno} "
-                f" and must not instruct, encourage or in any way suggest that any other person should do so."
-        )
-        self.ord_dict[key]=value
-        
-        key="Not communicate with children"
-
-        value=(f"The respondent {resp_name}, must not telephone, text,email or otherwise contact or attempt  "
-               f"the relevant {kidno} including via social networking websites or other forms of electronic"
-               f" messaging."
-        )
-        self.ord_dict[key]=value
-        
-        key="Not enter children's school"
-        value=(f"The respondent {resp_name}, must not go to, enter or attempt to enter the school premises"
-            f" known as {school_address} except by prior written invitation from the school authorities."
-        )
-        self.ord_dict[key]=value
-
+      
         
         
-        for text,var in zip(self.checkbox_texts_col1,self.checkbox_col1_vars):
-            
-            if var.get()==1:
-                
-                case_details.orders.append(self.ord_dict[text])
-                
+        
+#
+        
+        
+       
        
                     
         
@@ -2659,6 +2649,7 @@ class Actions(BasePage,tk.Frame):
         self.controller.last_page()
         
     def produce_order(self):
+        self.case_details.name_file()
         write_order(case_details=case_details)
         
     def save_file(self):
