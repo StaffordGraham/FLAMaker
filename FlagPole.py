@@ -153,6 +153,7 @@ class Start(BasePage,tk.Frame):
         self.config(bg=BACKGROUND_COLOUR)    
         self.grid_columnconfigure(0,weight=1)
         self.widgets_list=[]
+        self.var=tk.StringVar(value="Standard Orders")
         self.row_no=1
 		
 #TITLE Frame
@@ -178,6 +179,17 @@ class Start(BasePage,tk.Frame):
         new_case_button.config(background=FOREGROUND_COLOUR,fg=BACKGROUND_COLOUR)
         new_case_button.grid(row=self.row_no,column=1,padx=(10,10),pady=10,sticky='w')
         self.row_no+=1
+        self.var = tk.StringVar(value="Standard orders")
+
+# Define radio buttons
+        self.radio1 = tk.Radiobutton(self.input_frame, text="Standard Orders", variable=self.var, value="Standard Orders", command=self.on_select)
+        self.radio2 = tk.Radiobutton(self.input_frame, text="Full Mostyn", variable=self.var, value="Full Mostyn", command=self.on_select)
+
+# Use grid instead of pack
+        self.radio1.grid(row=self.row_no, column=0, sticky=tk.W, padx=10, pady=5)
+        self.row_no+=1
+        self.radio2.grid(row=self.row_no, column=0, sticky=tk.W, padx=10, pady=5)
+        self.row_no+=1
 
 #NEXT AND BACK BUTTON Frame
 
@@ -194,6 +206,9 @@ class Start(BasePage,tk.Frame):
 
 #FUNCTIONS
 
+        def on_select():
+            pass
+    
     def update_bottom_frame_width(self,event=None):
         self.bottom_frame.place_configure(width=self.winfo_width())
         
@@ -251,6 +266,10 @@ class Start(BasePage,tk.Frame):
     def front_step(self):
         #self.update(self.controller)
         self.controller.next_page()
+        
+    def on_select():
+        pass
+    
 
 
 		
@@ -1152,7 +1171,7 @@ class Hearing(BasePage,tk.Frame):
         self.applic_rep_title=ttk.Combobox(self.input_frame,values=titles)
         self.applic_rep_title.config(background=BACKGROUND_COLOUR,foreground=FOREGROUND_COLOUR,width=5)
         rep_name_pholder="Applicant's Representative"
-        self.applic_rep_name=tk.Entry(self.input_frame,bg='white',fg='dark grey',font=placeholder_Font)
+        self.applic_rep_name=tk.Entry(self.input_frame,bg='white',fg='blue',font=placeholder_Font)
         placeholderA='Enter name of applicant representative'
         self.applic_rep_name.insert(0,placeholderA)
 
