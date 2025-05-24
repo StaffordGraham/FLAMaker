@@ -80,9 +80,9 @@ class MultiPage(tk.Tk):
         self.container=ttk.Frame(self)
         self.container.pack(fill='both',expand=True)
         if standard_orders_only==True:
-            self.pages=[Start,Case,all_Orders,Applicant,Respondent,Children,Hearing,Duration, Actions]
+            self.pages=[Start,Case,Hearing,all_Orders,Applicant,Respondent,Children,Hearing,Duration, Actions]
         else:
-            self.pages=[Start,Case,NonMols,OccOrders,Applicant,Respondent,Children,Hearing,Duration, Actions]
+            self.pages=[Start,Case,Applicant,Respondent,Children,Hearing,NonMols,OccOrders,Undertakings,Duration, Actions]
         self.current_page_index=0
 
 
@@ -346,6 +346,7 @@ class Case (BasePage,tk.Frame):
         application_label.config(bg=BACKGROUND_COLOUR, fg=FOREGROUND_COLOUR)
         application_label.grid(row=self.row_no,column=0,padx=(10,10),pady=10,sticky='e')
         self.combo_application=ttk.Combobox(self,values=applications,style="Custom.TCombobox")
+        self.combo_application.current(2)
         self.combo_application.grid(row=self.row_no,column=1,padx=(10,10),pady=10,sticky='w')
         self.row_no +=1
         
@@ -355,6 +356,7 @@ class Case (BasePage,tk.Frame):
         relat_lbl.config(background=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         relat_lbl.grid(row=self.row_no,column=0,padx=(10,10),pady=(1),sticky='w')
         self.relat_combo=ttk.Combobox(self,values=rel_values,style="Custom.TCombobox")
+        self.relat_combo.set("Marriage")
         self.relat_combo.grid(row=self.row_no,column=1,padx=(10,10),pady=10,sticky='w')
         self.row_no+=1
         
@@ -373,6 +375,7 @@ class Case (BasePage,tk.Frame):
         self.combo_judge_rank= ttk.Combobox(self, values=judge_options,style='Custom.TCombobox')
         self.combo_judge_rank.set("Deputy District Judge")
         self.combo_judge_rank.grid(row=self.row_no,column=1,padx=10,pady=(10),sticky='w')
+
         
         self.row_no +=1
                 
@@ -383,6 +386,7 @@ class Case (BasePage,tk.Frame):
         self.label_judge_name.config(bg=BACKGROUND_COLOUR, fg=FOREGROUND_COLOUR)
         self.entry_judge_name=tk.Entry(self,background=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         self.entry_judge_name.config(background="White",fg=FOREGROUND_COLOUR)
+        self.entry_judge_name.insert(0,"Campbell")
         self.entry_judge_name.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
         self.row_no +=1
         
@@ -391,6 +395,7 @@ class Case (BasePage,tk.Frame):
         label_judge_gender.config(bg=BACKGROUND_COLOUR, fg=FOREGROUND_COLOUR)
         label_judge_gender.grid(row=self.row_no,column=0,padx=(10,10),pady=10,sticky='w')
         self.combo_judge_gender=ttk.Combobox(self,values =('Male','Female'),style='Custom.TCombobox')
+        self.combo_judge_gender.set("Male")
         self.combo_judge_gender.grid(row=self.row_no,column=1,padx=(10,10),pady=10,sticky='w')
         
         
@@ -416,7 +421,6 @@ class Case (BasePage,tk.Frame):
         self.bottom_frame.grid_columnconfigure(0,weight =1)
         self.bottom_frame.grid_columnconfigure(1,weight=1)
         self.bottom_frame.bind("<Double-1>",self.on_double_click)
-        self.fill_widgets()
         
     def on_double_click(self,event):
         self.fill_widgets()
@@ -425,18 +429,20 @@ class Case (BasePage,tk.Frame):
         pass
     
     def on_show(self):
+        
+        apple='applie'
+    
         if case_details.judge_rank:
             self.combo_judge_rank=case_details.judge_rank
         else:
-            self.combo_judge_rank="Deputy District Judge"
+            self.combo_judge_rank.set("Deputy District Judge")
         if case_details.judge_gender:
-            self.combo_judge_gender=case_details.judge_gender
+            self.combo_judge_gender.set(case_details.judge_gender)
         else:
-            self.combo_judge_gender="Male"
+            self.combo_judge_gender.set("Male")
         if case_details.judge_name:
             self.entry_judge_name=case_details.judge_name
-        else:
-            self.entry_judge_name="Compbell"
+       
             
         if case_details.case_number:
             self.entry_case_number=case_details.case_number
@@ -452,9 +458,9 @@ class Case (BasePage,tk.Frame):
             
     def update(self):
 
-        
+        print(self.combo_judge_rank)
         case_details.court_name=self.combo_court_name.get()
-        case_details.case_number=self.entry_case_number.get()
+        case_details.case_number=self.entry_case_number
         case_details.judge_rank=self.combo_judge_rank.get()
         case_details.judge_name=self.entry_judge_name.get()
         case_details.relationship=self.relat_combo.get()
@@ -478,35 +484,35 @@ class Case (BasePage,tk.Frame):
             self.update()
             self.controller.next_page()
             
-    def fill_widgets(self):
-        test_run=True
-        if test_run==True:
-            self.combo_application.set('Occupation Order')
-            self.combo_court_name.set('Medway')
-            self.entry_case_number.insert(0,'ME F240089')
-            self.relat_combo.set('Marriage')
-            self.combo_judge_rank.set('Deputy District Judge')
-            self.entry_judge_name.insert(0,'Campbell')
+    # def fill_widgets(self):
+    #     test_run=True
+    #     if test_run==True:
+    #         self.combo_application.set('Occupation Order')
+    #         self.combo_court_name.set('Medway')
+    #         self.entry_case_number.insert(0,'ME F240089')
+    #         self.relat_combo.set('Marriage')
+    #         self.combo_judge_rank.current(1)
+    #         self.combo_judge_rank.set(case_details.judge_rank)
             
-    def on_show(self):
-            if case_details.application ==0:
-                self.combo_application.set(self.combo_application['values'][0])
-            else:
-                self.combo_application.set(case_details.application)
+    # def on_show(self):
+    #         if case_details.application ==0:
+    #             self.combo_application.set(self.combo_application['values'][0])
+    #         else:
+    #             self.combo_application.set(case_details.application)
                 
-            if case_details.court_name==0:
-                self.combo_court_name.set(self.combo_court_name['values'][0])
-            else:
-                self.combo_court_name.set(case_details.court_name)
+    #         if case_details.court_name==0:
+    #             self.combo_court_name.set(self.combo_court_name['values'][0])
+    #         else:
+    #             self.combo_court_name.set(case_details.court_name)
                 
-            self.entry_case_number.delete(0,'end')
-            self.entry_case_number.insert(0,case_details.case_number)
+    #         self.entry_case_number.delete(0,'end')
+    #         self.entry_case_number.insert(0,case_details.case_number)
             
-            self.relat_combo.set(case_details.relationship)
-            self.combo_judge_rank.set(case_details.judge_rank)
-            self.entry_judge_name.delete(0,'end')
-            self.entry_judge_name.insert(0,case_details.judge_name)
-            self.combo_judge_gender.set(case_details.judge_gender)
+    #         self.relat_combo.set(case_details.relationship)
+    #         self.combo_judge_rank.set(case_details.judge_rank)
+    #         self.entry_judge_name.delete(0,'end')
+    #         self.entry_judge_name.insert(0,case_details.judge_name)
+    #         self.combo_judge_gender.set(case_details.judge_gender)
             
             
 class Property (BasePage,tk.Frame):
@@ -950,8 +956,7 @@ class Respondent(BasePage,tk.Frame):
         #self.fill_widgets()
        
     def on_double_click(self,event):
-        print ('in double click')
-        self.fill_widgets()
+        pass
         
    
     
@@ -1873,8 +1878,7 @@ class Recitals(BasePage,tk.Frame):
                 return 'a '
             
     def another_witness(self):
-        print('In another witness')
-        
+        pass
         
     def on_show(self):
         

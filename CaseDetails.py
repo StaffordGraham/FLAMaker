@@ -13,10 +13,8 @@ class CaseDetails:
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
             cls._instance=super(CaseDetails,cls).__new__(cls)
-            print('first instance of CaseDetails')
             return cls._instance
         else:
-            print('Can only have one instance of CaseDetails')
             return cls._instance
     
     
