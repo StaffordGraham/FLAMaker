@@ -1132,7 +1132,6 @@ class Hearing(BasePage,tk.Frame):
         self.combo_reasons.config(background=BACKGROUND_COLOUR,foreground=FOREGROUND_COLOUR)
         self.combo_reasons.grid(row=self.row_no,column=1,padx=(10,10),pady=(10,10),sticky='w')
         self.combo_reasons.current(0)
-        self.combo_reasons.config(state='disabled')
         self.row_no+=1
         
         #CONSENT ORDER 
@@ -1156,6 +1155,7 @@ class Hearing(BasePage,tk.Frame):
         self.stat_date=DateEntry(self.input_frame, width=12, year=now.year, month=now.month, day=now.day,
                                  date_pattern="dd//mm//yyyy")
         self.stat_date.grid(row=self.row_no,column=3,padx=(0,10),pady=10,sticky='w')
+        self.row_no +=2
         
         
         
@@ -1300,9 +1300,13 @@ class Hearing(BasePage,tk.Frame):
         
     def on_show(self):
         self.cal.set_date(case_details.hearing_date_object)
-        self.comb_listed_for.set(case_details.listed_for)
+        if case_details.listed_for:
+            self.comb_listed_for.set(case_details.listed_for)
         if case_details.notice:
             self.combo_notice.set(case_details.notice)
+            
+        if case_details.applicant.full_name:
+            self.wit_name1_text.insert(0,case_details.applicant.full_name)
             
         else:
             self.combo_notice=="Without Notice"
@@ -1319,8 +1323,8 @@ class Hearing(BasePage,tk.Frame):
             self.label_notice_reason.grid_remove()
             self.combo_reasons.grid_remove()
             
-            
-        self.combo_reasons.set(case_details.reasons)
+        if case_details.reasons:   
+            self.combo_reasons.set(case_details.reasons)
         # self.combo_app_rep_title.set(case_details.app_rep.title)
         # self.entry_app_repN1.delete(0,'end')
         # self.entry_app_repN1.insert(0,case_details.app_rep.first_name)  

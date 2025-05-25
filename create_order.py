@@ -188,18 +188,23 @@ def write_order(case_details):
         
         if numb_children>1:
             chilo="The “relevant children” within the meaning of Family Law Act 1996 are:"
-        else:
-            chilo="The relevant child within the meaning of the Family Law Act 1995 is:"
-        doc.add_paragraph(chilo,style="ListNumber")
-        
-        
-        starting_char='a'
-        for index, child in enumerate(case_details.children):
-            sentence=child.sentence
+            paragraph_text=chilo
             
-            prefix =chr(ord(starting_char)+index)
-            paragraph_text=f"\t{prefix}\t{sentence}"
-            doc.add_paragraph(paragraph_text)
+            starting_char='a'
+            
+            for index, child in enumerate(case_details.children):
+                    sentence=child.sentence
+                    prefix =chr(ord(starting_char)+index)
+                    paragraph_text+=f"\n  {prefix}\t{sentence}\n"
+                    
+            doc.add_paragraph(paragraph_text,style='ListNumber')
+            
+        else:
+            chilo=f"The relevant child within the meaning of the Family Law Act 1995 is {case_details.children[0].sentence}"
+            doc.add_paragraph(chilo,style='ListNumber')
+
+        
+        
             
             #DEFINITIONS FAMILY HOME
             
