@@ -82,7 +82,8 @@ class MultiPage(tk.Tk):
         if standard_orders_only==True:
             self.pages=[Start,Case,Hearing,all_Orders,Applicant,Respondent,Children,Hearing,Duration, Actions]
         else:
-            self.pages=[Start,Case,Applicant,Respondent,Children,Hearing,NonMols,OccOrders,Undertakings,Duration, Actions]
+            self.pages=[Start,Case,Applicant,Respondent,Children,Hearing,NonMols,OccOrders,Recitals,Undertakings,Directions,Duration, Actions]
+        print('Directions Should appear')
         self.current_page_index=0
 
 
@@ -199,8 +200,6 @@ class Start(BasePage,tk.Frame):
 
         back_button=tk.Button(self.bottom_frame,text="Back",command=self.back_step)
         next_button =tk.Button(self.bottom_frame, text="Next",command=self.front_step)
-        back_button.grid(row=1,column=0,padx=10,pady=(0,10),sticky='w')
-        next_button.grid(row=1,column=1,padx=10,pady=(0,10), sticky='e')
         self.bottom_frame.grid_columnconfigure(0,weight =1)
         self.bottom_frame.grid_columnconfigure(1,weight=1)
 
@@ -2451,6 +2450,106 @@ class NonMols(BasePage):
         
     def update_bottom_frame_width(self,event=None):
        self.bottom_frame.place_configure(width=self.winfo_width())
+       
+       
+       
+class Directions(BasePage,tk.Frame):
+    def __init__(self,parent,controller,case_details):
+        
+        super().__init__(parent,controller,case_details)
+        self.config(bg=BACKGROUND_COLOUR)
+        self.grid(sticky='nsew')
+        self.grid_columnconfigure(0,weight=1)
+        self.row_no=0
+		
+        #DIRECTIONS THE FRAME SHOWING THE PAGE TITLE
+        self.row_no +=1
+        self.top_frame=tk.Frame(self,bg='lightblue')
+        self.top_frame.grid(row=0,column=0,sticky='ew')
+        page_title=tk.Label(self.top_frame,text="Directions",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.top_frame.grid_columnconfigure(0,weight=1)  
+        page_title.grid(row=self.row_no,column=0,sticky='ew')
+        
+        #DIRECTIONS THE FRAME CONTAINING THE INPUT WIDGETS       
+        self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
+        self.input_frame.grid(row=self.row_no,column=0,sticky='nsew')
+        self.input_frame.grid_columnconfigure(0,weight=1)
+        
+        #DIRECTIONS THE INPUT WIDGETS
+        self.checked_items=[]
+        self.checkbox_col1_vars=[]
+        self.checkbox_col2_vars=[]
+        self.checkbox_texts_col1=[
+            "Applicant Statement of Case",
+            "Applicant - Permission to File Statement",
+            "Written Response",
+            "Permission to File Statement - Respondent",
+            "Police Disclosure-Separate Order",
+            "Disclosure of Order to Police",
+            "Disclosure to Third Parties",
+            "Directions Hearings",
+            "Final Hearing"
+            ]
+        
+
+
+
+        
+        for text in self.checkbox_texts_col1:
+            var =tk.IntVar()
+            self.checkbox_col1_vars.append(var)
+            chk=tk.Checkbutton(self.input_frame,text=text,variable=var)
+            chk.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+            chk.grid(row=self.row_no,column=0,padx=1,pady=10,sticky='w')
+            self.row_no+=1
+            
+        self.row_no=0       
+             
+       
+            
+        self.input_frame.grid_columnconfigure(0,weight=1)
+        self.input_frame.grid_columnconfigure(1,weight=1)        
+		
+        
+         #THE FRAME FOR THE NEXT AND BACK BUTTONS WITH RELATED FUNCTION
+        
+        self.bottom_frame=tk.Frame(self,bg=BACKGROUND_COLOUR,height=50)
+        self.bottom_frame.place(relx=0.5,rely=1.0,anchor='s',y=-20)
+        self.bind("<Configure>", self.update_bottom_frame_width)  # Bind resize event
+        #self.update_bottom_frame_width()
+       
+
+        back_button=tk.Button(self.bottom_frame,text="Back",command=self.back_step)
+        next_button =tk.Button(self.bottom_frame, text="Next",command=self.front_step)
+        back_button.grid(row=1,column=0,padx=10,pady=(0,10),sticky='w')
+        next_button.grid(row=1,column=1,padx=10,pady=(0,10), sticky='e')
+        self.bottom_frame.grid_columnconfigure(0,weight =1)
+        self.bottom_frame.grid_columnconfigure(1,weight=1)
+        
+    #DIRECTIONS FUNCTIONS
+        
+    def on_show(self):
+        pass
+    def update(self,controller):
+        #The following puts the checkbox text of ticked checkboxes in the list case_details.order_choices
+        for i, var in enumerate(self.checkbox_col1_vars):
+            if var.get() == 1:  # If the checkbox is checked
+                 case_details.directions.append(self.checkbox_texts_col1[i])
+                 
+      
+
+    def back_step(self):
+        ord="cow"
+        self.update(self.controller)
+        self.controller.last_page()
+        
+    def front_step(self):
+        self.update(self.controller)
+        self.controller.next_page()
+        
+    def update_bottom_frame_width(self,event=None):
+       self.bottom_frame.place_configure(width=self.winfo_width())
+    
        
 
 class Duration(BasePage,tk.Frame):

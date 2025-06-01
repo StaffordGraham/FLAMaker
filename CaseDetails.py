@@ -53,6 +53,7 @@ class CaseDetails:
             self.recitals=[]
             self.undertakings=[]
             self.order_choices=[]
+            self.directions=[]
             self.orders=[]
             self.order_last=""
             self.effective=""

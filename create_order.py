@@ -252,6 +252,8 @@ def write_order(case_details):
         resp_name1=case_details.respondent.first_name
         resp_name2=case_details.respondent.last_name
         resp_name=resp_name1+" "+resp_name2
+        a_wit_name=""
+        r_wit_name=""
               
         mat_home1=case_details.applicant.address_building_and_street
         mat_home2=case_details.applicant.address_second_line
@@ -270,6 +272,48 @@ def write_order(case_details):
         
         tody=date.today()
         leave_date = tody + timedelta(days=7)
+        dir_dict={}
+        #dir_dict[key]=value
+        key="Applicant Statement of Case"
+        value=(f"By 4.00pm on [date] {app_name} must send to the court and the other party a statement giving details of the allegations, addressing the relevant criteria under the Act, setting out what order they seek, and attaching copies of any relevant documents they wish to use to support their evidence.")
+        dir_dict[key]=value  
+        key="Applicant - Permission to File Statement"
+        value=(f"Permission to the {app_name} to file and serve a statement from {a_wit_name} by 4.00pm on {date}.")
+        dir_dict[key]=value
+        key="Written Response"
+        value =(f"By 4.00pm on {date} {resp_name} must send to the court and the other party a written response to the applicant’s statement.")
+        dir_dict[key]=value
+        key="Permission to File Statement - Respondent"
+        value=(f"Permission to the {resp_name} to file and serve a statement from {r_wit_name} by 4.00pm on {date}.")
+        dir_dict[key]=value
+        key="Statements General"
+        value = ("Every statement must: "\
+            "/n a.	start with the name of the case and the case number;"\
+            "/n b.	state the full name and address of the person making it;"\
+	        "/nc.   set out what the person has to say in numbered paragraphs on numbered pages"\
+            "/n d.	end with this statement: “I understand that proceedings for contempt of court may be brought"\
+                "against anyone who makes, or causes to be made, a false statement in a document "\
+                "verified by a statement of truth without an honest belief in its truth. "\
+                    'I believe that the facts stated in this witness statement are true.'\
+                "/n e.  be signed and dated by the person making it.")
+        dir_dict[key]=value
+        key="Interpreter"
+        value=("If a witness or a party is unable to read the statement in the form produced"\
+            "to the court, the statement must include a certificate that it has been read"\
+            "or interpreted to the witness by a suitably qualified person."\
+            "If a witness who has made a statement is to give evidence or be questioned"\
+            " and is unable to do so in spoken English (or Welsh if the hearing is in Wales),"\
+            "the party relying on that witness must ensure that a suitable interpreter is available.")
+        
+        dir_dict[key]=value
+        key = "Statement Length"
+        value =("Statements must be no longer than 10 pages of A4 paper, preferably typed in a font no smaller than 12pt "\
+            "and at no less than 1.5 in line spacing.")
+        
+        dir_dict[key]=value
+        key="Email Statements"
+        value=("The statements should also be sent in electronic form if possible")
+
         
         ord_dict={}
         key = "Use or threaten violence"
