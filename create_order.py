@@ -27,7 +27,7 @@ def write_order(case_details):
         court_name=f"In the Family Court\n sitting at {case_details.court_name}"
         case_number_text=f"Case No: {case_details.case_number}"
         appapp=case_details.application
-        appo =f"{appapp} \n Family Law Act 1996"
+        
             
       
          #CREATE DOCUMENT   
@@ -51,14 +51,27 @@ def write_order(case_details):
         line_paragraph = doc.add_paragraph()
         line_paragraph.add_run('_'*100)
         #THE APPLICATION AND THE STATUTE
-        paragraph=doc.add_paragraph()
-        appo=case_details.application
-        pprun=paragraph.add_run(appo)
-        pprun.bold=True
-        pparagraph=doc.add_paragraph()
-        pprun=pparagraph.add_run("Family Law Act 1996")
-        pprun.bold=True
-        paragraph=doc.add_paragraph()
+        
+        appo =f"Family Law Act 1996"
+        non_molo=f"Non Molestation Order"
+        occo=f"Occupation Order"
+        
+        header_paragraph=doc.add_paragraph()
+        header_run=header_paragraph.add_run(appo)
+        header_run.bold=True
+        
+        if case_details.molestation_order==True:
+            
+            mol_para=doc.add_paragraph()
+            mol_run=mol_para.add_run(non_molo)
+            mol_run.bold=True
+            
+        if case_details.occupation_order==True:
+            
+            occ_para=doc.add_paragraph()
+            occ_run=occ_para.add_run(occo)
+            occ_run.bold=True
+       
         
         #LINE
         line_paragrap=doc.add_paragraph()  # Adjust the number for length
@@ -99,7 +112,7 @@ def write_order(case_details):
         #THE WARNING
         
         warning_text=[] 
-        warning_text.append(f"IMPORTANT NOTICE TO THE RESPONDENT {case_details.respondent.first_name.upper()} ")
+        warning_text.append(f"IMPORTANT NOTICE TO THE Respondent {case_details.respondent.first_name.upper()} ")
         warning_text.append(case_details.respondent.last_name.upper())
         warning_text.append(f" of {case_details.respondent.address_building_and_street.upper()}, ")
         warning_text.append(f"{case_details.respondent.address_second_line.upper()} ")
@@ -153,13 +166,15 @@ def write_order(case_details):
         
         
         parties_definitions_text=[]
-        parties_definitions_text.append(f"The applicant is {case_details.applicant.first_name} {case_details.applicant.last_name}")
+        parties_definitions_text.append(f"The Applicant is {case_details.applicant.first_name} {case_details.applicant.last_name}\n")
         reppo=case_details.app_rep
-        beppo=case_details.resp_rep
-        
-        parties_definitions_text.append(f"represented by {case_details.app_rep.full_name}")
-        parties_definitions_text.append(f"The respondent is {case_details.respondent.first_name} {case_details.respondent.last_name}")
-        parties_definitions_text.append(f"represented by {case_details.resp_rep.full_name}")
+        beppo=reppo.first_name
+        if case_details.app_rep.first_name !="":
+            parties_definitions_text.append(f"represented by {case_details.app_rep.full_name}\n")
+            
+        parties_definitions_text.append(f"The Respondent is {case_details.respondent.first_name} {case_details.respondent.last_name}\n")
+        if case_details.resp_rep.first_name !='':
+            parties_definitions_text.append(f"represented by {case_details.resp_rep.full_name}/n")
         the_parties_defs=' '.join(parties_definitions_text)
         parties_table=doc.add_table(rows=2,cols=2)
         for row in parties_table.rows:
@@ -281,7 +296,7 @@ def write_order(case_details):
         value=(f"Permission to the {app_name} to file and serve a statement from {a_wit_name} by 4.00pm on {date}.")
         dir_dict[key]=value
         key="Written Response"
-        value =(f"By 4.00pm on {date} {resp_name} must send to the court and the other party a written response to the applicant’s statement.")
+        value =(f"By 4.00pm on {date} {resp_name} must send to the court and the other party a written response to the Applicant’s statement.")
         dir_dict[key]=value
         key="Permission to File Statement - Respondent"
         value=(f"Permission to the {resp_name} to file and serve a statement from {r_wit_name} by 4.00pm on {date}.")
@@ -318,35 +333,35 @@ def write_order(case_details):
         ord_dict={}
         key = "Use or threaten violence"
         value =(
-            f"The respondent {resp_name} must not use or threaten violence against the applicant {app_name}"
+            f"The Respondent {resp_name} must not use or threaten violence against the Applicant {app_name}"
          f" and must not instruct, encourage or in any way suggest any other person should do so."
          )
         
         ord_dict[key]=value
         
         key="Not intimidate,harass or pester"
-        value=(f"The respondent {resp_name} must not intimidate, harass or pester the applicant {app_name} "
+        value=(f"The Respondent {resp_name} must not intimidate, harass or pester the Applicant {app_name} "
                 f" and must not instruct, encourage or in any way suggest any other person should do so."
         )
         ord_dict[key]=value
         
         key="Not communicate"
 
-        value =(f"The respondent, {resp_name}, must not telephone, text, email or otherwise contact"
-                f" the applicant {app_name}, including via social networking websites or other forms of "
+        value =(f"The Respondent, {resp_name}, must not telephone, text, email or otherwise contact"
+                f" the Applicant {app_name}, including via social networking websites or other forms of "
                 f"electronic messaging."   
         )
         ord_dict[key]=value
         
         key="Not damage property"
-        value=(f"The respondent, {resp_name}, must not damage, attempt to damage or threaten to damage"
-               f"any property owned by or in the possession or controlof the applicant {app_name},"
+        value=(f"The Respondent, {resp_name}, must not damage, attempt to damage or threaten to damage"
+               f"any property owned by or in the possession or controlof the Applicant {app_name},"
                f"and must not instruct,encourage or in any way suggest that any other person should do so."
         )
         ord_dict[key]=value
         
         key="Not damage family home"
-        value =(f"The respondent {resp_name}, must not damage, attempt to damage or threaten to damage"
+        value =(f"The Respondent {resp_name}, must not damage, attempt to damage or threaten to damage"
                 f"the property or contents of {mat_home} and must not instruct, encourage or in any way suggest"
                 f"that any other person should do so."
               
@@ -355,15 +370,15 @@ def write_order(case_details):
         
         key ="Not Enter family home"
 
-        value=(f"The respondent {resp_name}, must not go to, enter or attempt to enter {mat_home} or "
-               f" any property where {case_details.respondent.nominative} believes the applicant {app_name}"
+        value=(f"The Respondent {resp_name}, must not go to, enter or attempt to enter {mat_home} or "
+               f" any property where {case_details.respondent.nominative} believes the Applicant {app_name}"
                f" to be living."
         )
         
         ord_dict[key]=value
         key="Non mol zonal"
         ord_dict[key]=value
-        value=(f" The respondent {resp_name} must not approach within 100 meters of the {mat_home}"
+        value=(f" The Respondent {resp_name} must not approach within 100 meters of the {mat_home}"
         )
         
         key="Not intimidate, harass or pester children"
@@ -375,14 +390,14 @@ def write_order(case_details):
         
         key="Not communicate with children"
 
-        value=(f"The respondent {resp_name}, must not telephone, text,email or otherwise contact or attempt  "
+        value=(f"The Respondent {resp_name}, must not telephone, text,email or otherwise contact or attempt  "
                f"the relevant {kidno} including via social networking websites or other forms of electronic"
                f" messaging."
         )
         ord_dict[key]=value
         
         key="Not enter children's school"
-        value=(f"The respondent {resp_name}, must not go to, enter or attempt to enter the school premises"
+        value=(f"The Respondent {resp_name}, must not go to, enter or attempt to enter the school premises"
             f" known as {school_address} except by prior written invitation from the school authorities."
         )
         ord_dict[key]=value
@@ -390,7 +405,7 @@ def write_order(case_details):
         
         key = "Declaration of Mat Home Rights"
         value =(
-            f"The court declares that the applicant "
+            f"The court declares that the Applicant "
          f"{app_name}, has home rights in {mat_home}."
          )
         
@@ -398,51 +413,51 @@ def write_order(case_details):
         
         key="Mat Home Rights Survive Divorce"
         value=(f"The court declares that the {app_name}'s "
-        f"home rights in {mat_home} shall not end when the respondent {resp_name}"
+        f"home rights in {mat_home} shall not end when the Respondent {resp_name}"
         f" dies or their {relat.lower()} is dissolved and shall continue until "
-        f"the determination of the applicant's financial provision claims or a further order is made."
+        f"the determination of the Applicant's financial provision claims or a further order is made."
         )
         ord_dict[key]=value
         
         key="R Allow Occupy  of Mat Home"
-        value =(f"The respondent, {resp_name}, shall allow the applicant, {app_name}, "
+        value =(f"The Respondent, {resp_name}, shall allow the Applicant, {app_name}, "
         f"to occupy the property at {mat_home}."
     
         )
         ord_dict[key]=value
         
         key="R Must Not Occupy Mat Home"
-        value=(f"The respondent, {resp_name}, must not occupy the property at {mat_home}"
+        value=(f"The Respondent, {resp_name}, must not occupy the property at {mat_home}"
         )
         ord_dict[key]=value
         
         key="R leave Mat Home"
-        value =(f"The respondent {resp_name}, shall leave the property at {mat_home}  by "
+        value =(f"The Respondent {resp_name}, shall leave the property at {mat_home}  by "
         f"4:00 pm on {leave_date}"
         )
         ord_dict[key]=value
         
         key ="R Not Return to Mat Home"
-        value=(f"Having left {mat_home}, the respondent {resp_name}, "
+        value=(f"Having left {mat_home}, the Respondent {resp_name}, "
         "must not return to, enter or attempt to enter it."
         )
         ord_dict[key]=value
         
         key="Not Obstruct A's Occupation"
         value =(f"The Respondent {resp_name}, must not obstruct, harass, or interfere with the "
-        f"applicant {app_name}'s peaceful occupation of {mat_home}"
+        f"Applicant {app_name}'s peaceful occupation of {mat_home}"
         )
         ord_dict[key]=value
         
         key="Right of Entry"
-        value=(f"The applicant {app_name} has the right to enter into and occupy  the {mat_home} "
-        f" and the respondent {resp_name},shall allow the applicant to do so."
+        value=(f"The Applicant {app_name} has the right to enter into and occupy  the {mat_home} "
+        f" and the Respondent {resp_name},shall allow the Applicant to do so."
         )
         ord_dict[key]=value
         
         key="Right Not to be Evicted"
-        value=(f"The applicant {app_name}, has the right not to be evicted or excluded from, and the "
-        f"respondent {resp_name}, must not evict or exclude the applicant from {mat_home}"
+        value=(f"The Applicant {app_name}, has the right not to be evicted or excluded from, and the "
+        f"Respondent {resp_name}, must not evict or exclude the Applicant from {mat_home}"
         )
         ord_dict[key]=value
         

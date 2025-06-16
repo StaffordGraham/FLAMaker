@@ -36,11 +36,12 @@ class CaseDetails:
             self.app_address_secret = True
             self.hearing_date_object=datetime.now()
             self.listed_for="Interim Hearing"
-            self.application="Occupation Order"
+            self.molestation_order =False
+            self.occupation_order = False
             self.para_numbers=[]
             self.consent_order =False
             self.notice="On Notice"
-            self.reasons="Urgency"
+            self.reasons=""
             self.judge_and_hearing=""
             self.applicant = Person('Applicant')
             self.app_rep=Person("Applicant's Representative")

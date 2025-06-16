@@ -30,6 +30,14 @@ case_details=CaseDetails()
 applicant =Person
 respondent = Person
 standard_orders_only=False
+with open('boy_names_set.pkl', 'rb') as f:
+        boy_names_set = pickle.load(f)
+
+with open('girl_names_set.pkl', 'rb') as f:
+         girl_names_set = pickle.load(f)
+         
+print(girl_names_set)
+        
 
 
 
@@ -285,7 +293,8 @@ class Case (BasePage,tk.Frame):
         super().__init__(parent,controller,case_details)
         self.child_count=0
         self.input_controls =[]
-        applications=['Occupation Order','Non-Molestation Order','Occupation & Non-Molestation Orders']
+        self.applications=['Occupation Order','Non-Molestation Order','Occupation & Non-Molestation Orders']
+        self.abbrev_applications=["Occupation","Molestation"]
         self.row_no = 0
         self.check_var = True
         
@@ -344,7 +353,7 @@ class Case (BasePage,tk.Frame):
         application_label=tk.Label(self,text='Application Made',font=('Helvetica',12),anchor='e',width=20)
         application_label.config(bg=BACKGROUND_COLOUR, fg=FOREGROUND_COLOUR)
         application_label.grid(row=self.row_no,column=0,padx=(10,10),pady=10,sticky='e')
-        self.combo_application=ttk.Combobox(self,values=applications,style="Custom.TCombobox")
+        self.combo_application=ttk.Combobox(self,values=self.applications,style="Custom.TCombobox")
         self.combo_application.current(2)
         self.combo_application.grid(row=self.row_no,column=1,padx=(10,10),pady=10,sticky='w')
         self.row_no +=1
@@ -394,6 +403,7 @@ class Case (BasePage,tk.Frame):
         label_judge_gender.config(bg=BACKGROUND_COLOUR, fg=FOREGROUND_COLOUR)
         label_judge_gender.grid(row=self.row_no,column=0,padx=(10,10),pady=10,sticky='w')
         self.combo_judge_gender=ttk.Combobox(self,values =('Male','Female'),style='Custom.TCombobox')
+        self.combo_judge_gender.config(background=BACKGROUND_COLOUR,foreground=FOREGROUND_COLOUR)
         self.combo_judge_gender.set("Male")
         self.combo_judge_gender.grid(row=self.row_no,column=1,padx=(10,10),pady=10,sticky='w')
         
@@ -463,7 +473,14 @@ class Case (BasePage,tk.Frame):
         case_details.judge_rank=self.combo_judge_rank.get()
         case_details.judge_name=self.entry_judge_name.get()
         case_details.relationship=self.relat_combo.get()
-        case_details.application=self.combo_application.get()
+        applications_string=self.combo_application.get()
+        if self.abbrev_applications[1] in applications_string:
+            case_details.molestation_order=True
+        if self.abbrev_applications[0] in applications_string:
+            case_details.occupation_order=True
+       
+        
+        
         case_details.judge_rank=self.combo_judge_rank.get()
         case_details.judge_gender=self.combo_judge_gender.get()
             
@@ -761,8 +778,10 @@ class Applicant(BasePage,tk.Frame):
        
 
     def on_double_click(self,event):
+        fox = 'fox'
         self.fill_widgets()
     def fill_widgets(self):
+        test_run=True
         if test_run==True:
             for widget in self.applicant_widgets:
                 if isinstance(widget,tk.Entry):
@@ -934,6 +953,7 @@ class Respondent(BasePage,tk.Frame):
         self.postcode_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
         self.respondent_widgets.append(self.postcode_entry)
         self.row_no+=1
+
        
                
         #NEXT AND BACK BUTTONS
@@ -954,10 +974,31 @@ class Respondent(BasePage,tk.Frame):
         self.bottom_frame.grid_columnconfigure(1,weight=1)
         #self.fill_widgets()
        
-    def on_double_click(self,event):
-        pass
-        
    
+    
+    def fill_widgets(self):
+        test_run=True
+        if test_run==True:
+            for widget in self.applicant_widgets:
+                if isinstance(widget,tk.Entry):
+                    widget.delete(0,tk.END)
+
+            
+            self.combo_title.set('Mr')
+            self.first_name_entry.delete(0,tk.END)
+            
+            self.first_name_entry.insert(0,'Robert')
+            self.surname_entry.insert(0,'Ashes')
+            self.gender_combo.set('Male')
+
+            self.add1_entry.insert(0,'20 Petersen Gardens')
+            self.add2_entry.insert(0,'Tonbridge')
+            self.town_entry.insert(0,'Kent')
+            self.postcode_entry.insert(0,'PN3 0H5')
+    
+        
+    def on_double_click(self,event):
+        self.fill_widgets()
     
     def on_show(self):
         if case_details.respondent.title=="":
@@ -1052,7 +1093,7 @@ class Hearing(BasePage,tk.Frame):
         
         
         notices=['On Notice','Without Notice','On Short Notice']
-        self.reasons=["","Urgency","Risk of harm","welfare of children","Frustrate order"]
+        self.reasons=["Risk of harm","Urgency","welfare of children","Frustrate order"]
         
 		
 		#THE FRAME SHOWING THE PAGE TITLE
@@ -1105,6 +1146,8 @@ class Hearing(BasePage,tk.Frame):
         label_listed_for.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         label_listed_for.grid(row=self.row_no,column=0,padx=(10),pady=(10),sticky='w')
         self.comb_listed_for =ttk.Combobox(self.input_frame,values = listed_for_values,style="Custom.TCombobox")
+        self.comb_listed_for.current(0)
+        
         self.comb_listed_for.grid(row=self.row_no,column=1,padx=(10),pady=(10),sticky='w')
         
         
@@ -1137,67 +1180,55 @@ class Hearing(BasePage,tk.Frame):
         
         
         #STATEMENT READ
-        self.statements_label=tk.Label(self.input_frame,text="Statements Read by the Court")
-        self.statements_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
-        self.statements_label.grid(row=self.row_no,column=0,padx=(0,0),pady=10,sticky='w')
-        self.row_no+=1
-        self.statement_of_label=tk.Label(self.input_frame,text="Statement  of ")
-        self.statement_of_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
+       
+        self.statement_of_label=tk.Label(self.input_frame,text="Date of Applicant Statement")
+        self.statement_of_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=("Helvetica,16"))
         self.statement_of_label.grid(row=self.row_no,column=0,padx=(0,0),pady=10,sticky='w')
-        
-        self.wit_name1_text=tk.Entry(self.input_frame,background="white",fg=FOREGROUND_COLOUR)
-        self.wit_name1_text.grid(row=self.row_no,column=1,padx=(0,0),pady=10,sticky='w')
-        self.dated_label=tk.Label(self.input_frame, text=' dated ')
-        self.dated_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
-        self.dated_label.grid(row=self.row_no,column=2,padx=(10,10),pady=10,sticky='w')        
         now=datetime.now()
         self.stat_date=DateEntry(self.input_frame, width=12, year=now.year, month=now.month, day=now.day,
                                  date_pattern="dd//mm//yyyy")
-        self.stat_date.grid(row=self.row_no,column=3,padx=(0,10),pady=10,sticky='w')
+        self.stat_date.grid(row=self.row_no,column=1,padx=(10,10),pady=10,sticky='w')
         self.row_no +=2
         
         
         
         #SEPARATOR
-        app_appearance_values = ['Applicant in person','Applicant represented by ','no appeance by Applicant']
-        resp_appearance_values =['Respondent in person','Respondent represented by','no appearance by Respondent']
+        appearance_values = ['In person','With Counsel ','With Solicitor','No Appearance']
+        
+        
         
         #REPRESENTATION
-        label_appearance=tk.Label(self.input_frame,text="Appearing at this Hearing",font=theFont,anchor='w')
-        label_appearance.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        label_appearance=tk.Label(self.input_frame,text="Appearing at this Hearing: ",anchor='w')
+        label_appearance.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=("Helvetica,16"))
         label_appearance.grid(row=self.row_no,column=0,padx=0,pady=0,sticky='w')
         self.row_no+=2
-        self.applic_appearance_combo=ttk.Combobox(self.input_frame,values=app_appearance_values)
-        self.applic_appearance_combo.config(background=BACKGROUND_COLOUR,foreground=FOREGROUND_COLOUR,width=20)
-        placeholder = app_appearance_values[0]
-        self.applic_appearance_combo.set(placeholder)
-        self.applic_appearance_combo.grid(row=self.row_no,column=0,padx=(10,10),pady=10, sticky='w')
-        self.applic_rep_title=ttk.Combobox(self.input_frame,values=titles)
-        self.applic_rep_title.config(background=BACKGROUND_COLOUR,foreground=FOREGROUND_COLOUR,width=5)
-        rep_name_pholder="Applicant's Representative"
-        self.applic_rep_name=tk.Entry(self.input_frame,bg='white',fg='blue',font=placeholder_Font)
-        placeholderA='Enter name of applicant representative'
-        self.applic_rep_name.insert(0,placeholderA)
-
-        self.applic_rep_name.bind("<FocusIn>",lambda  event, e=self.applic_rep_name,p=placeholderA: clear_placeholder(event,e,p))
-        self.applic_rep_name
-        self.applic_rep_title.grid(row=self.row_no,column=1,padx=0,pady=0,sticky='w')
-        titplac=titles[0]
-        self.applic_rep_title.set(titplac)
-        self.applic_rep_name.grid(row=self.row_no,column=2,padx=0,pady=0,sticky='w')
-        
+        app_appearance_label=tk.Label(self.input_frame,text="Applicant")
+        app_appearance_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=("Helvetica,12"))
+        app_appearance_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='e')
+        app_appearance_combo=ttk.Combobox(self.input_frame,values =appearance_values)
+        app_appearance_combo.current(1)
+        app_appearance_combo.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='e')
         self.row_no+=1
-        self.resp_appearance_combo=ttk.Combobox(self.input_frame,values=resp_appearance_values)
-        self.resp_appearance_combo.config(background=BACKGROUND_COLOUR,foreground=FOREGROUND_COLOUR)
-        placeholder=resp_appearance_values[2]
-        self.resp_appearance_combo.grid(row=self.row_no, column=0, padx=(10,10),pady=0,sticky='w')
-        self.resp_appearance_combo.set(placeholder)
-        self.resp_rep_title=ttk.Combobox(self.input_frame,values=titles)
-        self.resp_rep_title.set(titplac)
-        self.resp_rep_title.config(background=BACKGROUND_COLOUR,foreground=FOREGROUND_COLOUR,width=5)
-        self.resp_rep_name=tk.Entry(self.input_frame,bg='white',fg=FOREGROUND_COLOUR,font=theFont)
-        self.resp_rep_title.grid(row=self.row_no,column=1,padx=0,pady=0,sticky='w')
-        self.resp_rep_name.grid(row=self.row_no,column=2,padx=0,pady=0,sticky='w')
+        app_rep_type="Counsel"
+        label_rep_name_text=f"Name of {app_rep_type}"
+        label_rep_name=tk.Label(self.input_frame,text=label_rep_name_text)
+        label_rep_name.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        label_rep_name.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
+        app_rep_name=tk.Entry(self.input_frame)
+        app_rep_name.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
+        self.row_no+=1
+        
+        
+        resp_appearance_label=tk.Label(self.input_frame,text="Respondent")
+        resp_appearance_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=("Helvetica,12"))
+        resp_appearance_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='e')
+        resp_appearance_combo=ttk.Combobox(self.input_frame,values =appearance_values)
+        resp_appearance_combo.current(0)
+        resp_appearance_combo.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='e')
+        
+       
+        
+        
         
 
         
@@ -1206,13 +1237,7 @@ class Hearing(BasePage,tk.Frame):
        
         self.row_no+=1
         
-        #RESPONDENT REPRESENTATIVE
-        
-        # label_resp_rep=tk.Label(self,text="Respondent Representative",font=theFont,anchor='w')
-        # label_resp_rep.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
-        # label_resp_rep.grid(row=self.row_no,column=0,padx=0,pady=10,sticky ='w')
-        # self.combo_resp_rep_title=ttk.Combobox(self,values=titles,style="Custom.TCombobox",width=5)
-        # self.combo_resp_rep_title.grid(row=self.row_no,column=1,padx=0,pady=10,sticky='w')
+       
        
         self.row_no+=1
         self.bind("<Double-1>",self.on_double_click)
@@ -1228,7 +1253,6 @@ class Hearing(BasePage,tk.Frame):
         self.bottom_frame=tk.Frame(self,bg=BACKGROUND_COLOUR,height=50)
         self.bottom_frame.place(relx=0.5,rely=1.0,anchor='s',y=-20)
         self.bind("<Configure>", self.update_bottom_frame_width)  # Bind resize event
-        #self.update_bottom_frame_width()
        
 
         back_button=tk.Button(self.bottom_frame,text="Back",command=self.last_action)
@@ -1305,7 +1329,7 @@ class Hearing(BasePage,tk.Frame):
             self.combo_notice.set(case_details.notice)
             
         if case_details.applicant.full_name:
-            self.wit_name1_text.insert(0,case_details.applicant.full_name)
+          pass
             
         else:
             self.combo_notice=="Without Notice"
@@ -1382,6 +1406,7 @@ class Hearing(BasePage,tk.Frame):
 
             
 class  Children(BasePage,tk.Frame):
+    
     def __init__(self,parent,controller,case_details):
         
         super().__init__(parent,controller,case_details)
@@ -1399,7 +1424,8 @@ class  Children(BasePage,tk.Frame):
         
 
 
-
+    
+        
         self.config(bg=BACKGROUND_COLOUR)
         self.grid(sticky='nsew')
         self.grid_columnconfigure(0,weight=1)
@@ -1500,6 +1526,7 @@ class  Children(BasePage,tk.Frame):
         self.child_widgets['gender'].grid (row=self.row_no,column=3, padx=(10,10),pady=10,sticky='w')  
         self.child_widgets['birthday'].grid (row=self.row_no,column=4, padx=(10,0),pady=10,sticky='w') 
         self.child_widgets['another_child'].grid (row=self.row_no,column=5, padx=(10,10),pady=10,sticky='w')
+        self.child_widgets['name1'].bind('<FocusOut>',self.detect_sex)
        
         
         
@@ -1519,6 +1546,19 @@ class  Children(BasePage,tk.Frame):
         self.bottom_frame.grid_columnconfigure(1,weight=1)
         
     #FUNCTIONS CHILDREN
+    def detect_sex(self,event):
+        first_name=self.child_widgets['name1'].get().strip().title()
+        if first_name in boy_names_set:
+            self.child_widgets['gender'].set('Boy')
+            print('boy')
+        elif first_name in girl_names_set:
+             self.child_widgets['gender'].set('Girl')
+             print('girl')
+        else:
+            self.child_widgets['gender'].set("")
+            print('not found')
+        
+        
     def latest_dob(self):
         
        
@@ -1636,7 +1676,9 @@ class  Children(BasePage,tk.Frame):
             
         if case_details:
             if len(case_details.children)==0:
-                t =case_details.respondent.last_name
+                if case_details.relationship=="Marriage":
+                    t =case_details.respondent.last_name
+                else: t= case_details.applicant.last_name
                 if t!='':
                     self.child_widgets['name2'].insert(0,t)
             
@@ -1736,6 +1778,7 @@ class  Children(BasePage,tk.Frame):
                                                    fg=BACKGROUND_COLOUR,
                                                    command= self.another_kid)
         }
+        self.child_widgets['name1'].bind('<FocusOut>',self.detect_sex)
         self.child_widgets['birthday'].bind("<<DateEntrySelected>>", lambda event: self.lowest_date())
 
         self.child_widgets_list.append(self.child_widgets)  
@@ -1745,6 +1788,9 @@ class  Children(BasePage,tk.Frame):
         self.child_widgets['gender'].grid (row=self.row_no,column=3, padx=(10,10),pady=10,sticky='w')  
         self.child_widgets['birthday'].grid(row=self.row_no,column=4,padx=(10,10),pady=10,sticky='w')
         self.child_widgets['another_child'].grid (row=self.row_no,column=5, padx=(10,10),pady=10,sticky='w')
+        self.child_widgets['name1'].focus_set()
+        t=self.child_widgets_list[0]['name2'].get()
+        self.child_widgets['name2'].insert(0,t)
         self.row_no+=1 
         
     def to_dict(self):
@@ -1898,7 +1944,33 @@ class Recitals(BasePage,tk.Frame):
         self.controller.next_page()
         
     def update(self):
-        app_type =case_details.application
+        if case_details.molestation_order:
+            app_type= "a non-molestation order "
+            if case_details.occupation_order:
+                app_type +="and an occupation order"
+        elif case_details.occupation_order:
+            app_type="an occupation order"
+        else:
+            app_type="an order"
+        
+        if len(case_details.children)>1: 
+            child_no=" children "
+        else:
+            child_no= "child "
+        reason ="" 
+        if case_details.reasons=="Urgency":
+            reason = "because the matter is urgent"
+        elif case_details.reasons=="Risk of harm":
+            reason = " because there would be a risk of harm to the Applicant if the Respondent knew about this application in advance"
+        elif case_details.reasons=="welfare of children":
+            reason = f" because there would be a risk to the welfare of the {child_no} if the Respondent knew about this application in advance"
+        elif case_details.reasons=="Frustrate order":
+            reason = f" because it is feared that the order would be frustrated if the Respondent knew about this application in advance. "
+        else:
+            pass
+            
+             
+            
         
     
         
@@ -1914,11 +1986,11 @@ class Recitals(BasePage,tk.Frame):
        
         recitals_dict={
             "Standard":(
-                f"This is {artic} {app_type} made against the respondent "
+                f"This is {app_type} made against the Respondent "
             f"{case_details.respondent.first_name}  {case_details.respondent.last_name} on "
             f"{case_details.hearing_date_object.strftime('%d %B %Y').replace(' 0', ' ') if case_details.hearing_date_object.day < 10 else case_details.hearing_date_object.strftime('%d %B %Y')} "
             f"by {case_details.judge_rank} {case_details.judge_name} "
-            f"on the application of the applicant {case_details.applicant.first_name}  {case_details.applicant.last_name}"
+            f"on the application of the Appplicant {case_details.applicant.first_name}  {case_details.applicant.last_name}"
             ),
             
              "Legal Aid":("The court records the following information for the purposes of the Family Advocacy Scheme (FAS):\n"
@@ -1937,14 +2009,22 @@ class Recitals(BasePage,tk.Frame):
             f"The reason why the order was made {the_notice.lower()} to the respondent was {case_details.reasons}."
             f"The respondent has the right to apply to the court to vary or discharge the order" 
             f" see paragraph  below."),
-            "On Notice":"This order was made at a hearing on notice to the respondent."
+            "On Notice":"This order was made at a hearing on notice to the respondent.",
+            "Without Notice":f"This order was made at a hearing without notice to the Respondent {reason}."
+                              f"The Respondent has the right to apply to the court to vary or discharge this order. "
+                              f"(see paragraph below)",
             
         }
         recitals_list=["Standard"]
-        if case_details.notice !='On Notice':
-                recitals_list.append("Short Notice")
+        if case_details.notice =='Short Notice':
+                recitals_list.append("On Notice")
+        elif case_details.notice=="Without Notice":
+            recitals_list.append("Without Notice")
         else:
             recitals_list.append("On Notice")
+                
+        
+        
         
         for text,var in zip(self.checkbox_texts,self.checkbox_vars):
            
@@ -2374,13 +2454,25 @@ class NonMols(BasePage):
             "Not communicate with children",
             "Not enter children's school"
             ]
+        self.auto_checkbox=[
+            "Use or threaten violence",
+            "Not intimidate,harass or pester",
+            "Not communicate",
+            "Not damage property",
+            "Not damage family home"
+                     ]
         
 
 
 
         
+        self.booly=True
         for text in self.checkbox_texts_col1:
-            var =tk.IntVar()
+            if text in self.auto_checkbox:
+                self.booly=True
+            else:
+                self.booly=False
+            var =tk.IntVar(value=self.booly)
             self.checkbox_col1_vars.append(var)
             chk=tk.Checkbutton(self.input_frame,text=text,variable=var)
             chk.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=theFont)
