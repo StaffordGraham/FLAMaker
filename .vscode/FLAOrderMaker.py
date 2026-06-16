@@ -6,7 +6,7 @@ import os
 import tkinter as tk
 from tkinter import ttk
 from tkcalendar import DateEntry
-from Person import Person
+from classes.Person import Person
 
 
 def submit_form():

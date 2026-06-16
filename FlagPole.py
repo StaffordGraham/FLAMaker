@@ -1,9 +1,11 @@
 import tkinter as tk
 from tkinter import ttk
+from tokenize import Name
+import pdfplumber
 from tkinter import messagebox
 from tkcalendar import Calendar
-from Person import Person
-from Person import Child
+from classes.Person import Person
+# from classes.Person import Child
 from CaseDetails import CaseDetails
 from datetime import datetime
 from tkcalendar import DateEntry
@@ -14,31 +16,46 @@ from docx.oxml import OxmlElement
 from docx.shared import Cm
 #import create_order
 from create_order import write_order
-import functions
-from functions import date_format
+import utils.functions as functions
+from utils.functions import date_format
 from tkcalendar import DateEntry
 from tkinter import filedialog
+import requests
 import json
-import Lists_Dictionaries
-from Lists_Dictionaries import titles,kid_genders,days,months,years,notice_values
+import utils.Lists_Dictionaries as Lists_Dictionaries
+from utils.Lists_Dictionaries import titles,kid_genders,days,months,years,notice_values
 import create_order
+from utils.functions import json_to_case_details
 import pprint
 import pickle
+import pdfplumber
+from pathlib import Path
+import pickle
+from extractor.field_extractor import extract_from_fl401_by_field
+from extractor.ocr import    extract_by_ocr
+from classes.Child import Child
+
+from pathlib import Path
+import pickle
+import pyperclip
+
+BASE_DIR = Path(__file__).resolve().parent  # project root
+DATA_DIR = BASE_DIR / "data"
+
+with open(DATA_DIR / "boy_names_set.pkl", "rb") as f:
+    boy_names = pickle.load(f)
+
+with open(DATA_DIR / "girl_names_set.pkl", "rb") as f:
+    girl_names = pickle.load(f)
+
+
 
 import sys
-case_details=CaseDetails()
 applicant =Person
 respondent = Person
 standard_orders_only=False
-with open('boy_names_set.pkl', 'rb') as f:
-        boy_names_set = pickle.load(f)
-
-with open('girl_names_set.pkl', 'rb') as f:
-         girl_names_set = pickle.load(f)
-         
-print(girl_names_set)
-        
-
+case_details=CaseDetails()
+from extractor.extractor import extract_form_fields
 
 
 
@@ -87,11 +104,11 @@ class MultiPage(tk.Tk):
         self.geometry("880x550")
         self.container=ttk.Frame(self)
         self.container.pack(fill='both',expand=True)
+        self.case_details=CaseDetails()
         if standard_orders_only==True:
             self.pages=[Start,Case,Hearing,all_Orders,Applicant,Respondent,Children,Hearing,Duration, Actions]
         else:
             self.pages=[Start,Case,Applicant,Respondent,Children,Hearing,NonMols,OccOrders,Recitals,Undertakings,Directions,Duration, Actions]
-        print('Directions Should appear')
         self.current_page_index=0
 
 
@@ -101,11 +118,11 @@ class MultiPage(tk.Tk):
             page_name=F.__name__
             if F==Case:
                 #frame=F(parent=self.container,controller=self,case_details=self.case_info)
-                frame=F(parent=self.container,controller=self,case_details=case_details)
+                frame=F(parent=self.container,controller=self,case_details=self.case_details)
 
                 
             else:
-                frame = F(parent=self.container, controller=self,case_details=case_details)  
+                frame = F(parent=self.container, controller=self,case_details=self.case_details)  
 
             self.frames[page_name] = frame
             frame.grid(row=0, column=0, sticky='nsew')  # Ensure frame can expand   
@@ -132,7 +149,7 @@ class MultiPage(tk.Tk):
             self.current_page_index +=1
             temp_var = self.current_page_index
             next_page=self.pages[self.current_page_index]
-            if next_page.__name__=='Undertakings' and case_details.notice !='On Notice':
+            if next_page.__name__=='Undertakings' and self.case_details.notice !='On Notice':
                 continue
             self.show_frame(self.pages[self.current_page_index].__name__)
             break
@@ -164,7 +181,7 @@ class Start(BasePage,tk.Frame):
         self.widgets_list=[]
         self.var=tk.StringVar(value="Standard Orders")
         self.row_no=1
-		
+        
 #TITLE Frame
 
         self.top_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
@@ -172,9 +189,9 @@ class Start(BasePage,tk.Frame):
         page_title=tk.Label(self.top_frame,text="Start Session",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         self.top_frame.grid_columnconfigure(0,weight=1)
         page_title.grid(row=self.row_no,column=0, padx=0,pady=10,sticky='ew')
-		
+        
 #WIDGET Frame
-	
+    
         self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
         self.input_frame.grid(row=1,column=0,sticky='w')
         self.input_frame.grid_columnconfigure(0,weight=0)
@@ -184,9 +201,13 @@ class Start(BasePage,tk.Frame):
         open_file_button.grid(row=self.row_no,column=1,padx=(10,10),pady=10,sticky='w')
         self.row_no+=1
         
-        new_case_button=tk.Button(self.input_frame, text='New Case',command=self.new_case)
+        new_case_button=tk.Button(self.input_frame, text='New Case ',command=self.new_case)
         new_case_button.config(background=FOREGROUND_COLOUR,fg=BACKGROUND_COLOUR)
-        new_case_button.grid(row=self.row_no,column=1,padx=(10,10),pady=10,sticky='w')
+        ai_button=tk.Button(self.input_frame,text='Use AI',command=self.use_ai)
+        ai_button.config(background=FOREGROUND_COLOUR,fg=BACKGROUND_COLOUR)
+        ai_button.grid(row=self.row_no,column=1,padx=(10,10),pady=10,sticky='w')
+
+        new_case_button.grid(row=self.row_no,column=2,padx=(10,10),pady=10,sticky='w')
         self.row_no+=1
         self.var = tk.StringVar(value="Standard orders")
 
@@ -208,70 +229,169 @@ class Start(BasePage,tk.Frame):
 
         back_button=tk.Button(self.bottom_frame,text="Back",command=self.back_step)
         next_button =tk.Button(self.bottom_frame, text="Next",command=self.front_step)
+        back_button.grid(row=0, column=0, padx=20, pady=10, sticky="e")
+        next_button.grid(row=0, column=1, padx=20, pady=10, sticky="w")
+
         self.bottom_frame.grid_columnconfigure(0,weight =1)
         self.bottom_frame.grid_columnconfigure(1,weight=1)
 
 #FUNCTIONS
+    def extract_text_pdfplumber(self,path):
+        with pdfplumber.open(path) as pdf:
+             text = ''
+             for page in pdf.pages:
+                 text += page.extract_text()
+        return text.strip()
+    
+        
+        
+        
 
-        def on_select():
-            pass
+        
+        
+        
+       
+    def use_ai(self):
+
+    # 1. Create the Python dictionary (dummy data for now)
+        data = {
+        "case": {
+            "court_name": "Brighton",
+            "case_number": "BN23F01234",
+            "application_type": "Non-Molestation Order",
+            "relationship": "Marriage",
+            "judge_rank": "District Judge",
+            "judge_name": "Harrington",
+            "judge_gender": "Male"
+        },
+
+        "applicant": {
+            "first_name": "Emily",
+            "last_name": "Turner",
+            "address": {
+                "line1": "14 Willow Close",
+                "line2": "",
+                "town": "Eastbourne",
+                "postcode": "BN21 4AB"
+            },
+            "dob": "1987-03-12",
+            "gender": "Female"
+        },
+
+        "respondent": {
+            "first_name": "Daniel",
+            "last_name": "Turner",
+            "address": {
+                "line1": "22 Marine Road",
+                "line2": "Flat 3",
+                "town": "Hailsham",
+                "postcode": "BN27 1DP"
+            },
+            "dob": "1985-11-02",
+            "gender": "Male"
+        },
+
+        "children": [
+            {"first_name": "Sophie", "dob": "2015-06-21"},
+            {"first_name": "Oliver", "dob": "2018-09-14"}
+        ],
+
+        "family_home": {
+            "line1": "22 Marine Road",
+            "line2": "Flat 3",
+            "town": "Hailsham",
+            "postcode": "BN27 1DP"
+        },
+
+        "hearing": {
+            "date": "2026-05-20",
+            "time": "10:00",
+            "type": "Interim Hearing",
+            "notice": "On Notice"
+        },
+
+        "orders_requested": {
+            "non_molestation": True,
+            "occupation": False,
+            "undertakings": False
+        }
+    }
+
+    # 2. Load the data into the shared CaseDetails object
+        self.case_details.load_from_json(data)
+
+    # 3. Move to the next page
+        self.controller.next_page()
+
+    
     
     def update_bottom_frame_width(self,event=None):
         self.bottom_frame.place_configure(width=self.winfo_width())
         
     def new_case(self):
-        
         if self.case_details:
             self.case_details.reset()
             self.front_step()
             
         
-   
-        
-    def file_open(self):
-        
-        try:
-            if case_details is not None:
-                del case_details            
-        except NameError:
+    def extract_page_text(self,path,page_no):
+        with pdfplumber.open(path) as pdf:
+            if page_no < len(pdf.pages):
+                page = pdf.pages[page_no]
+                return page.extract_text().strip()
+            else:
+                return ""
             
-            pass
-        
-        filepath =self.open_file_dialog()
     
-        if filepath:
-            with open (filepath,'rb') as file:
-              case_details=pickle.load(file)
             
-        self.front_step()
+            
+    def file_open(self):
+        pdfPath =self.open_file_dialog()
+        p='q'
+        data_json=extract_from_fl401_by_field(pdfPath)
+        if not data_json:
+            data_json=extract_by_ocr(pdfPath)
+        cd= json_to_case_details(data_json,case_details)
+        print("Respondent first name: ",case_details.respondent.first_name)
+        print(" Respondent last name:",case_details.respondent.last_name)
+        print("Respondent building and street",case_details.respondent.address_building_and_street)
+        print("Respondent address second line",case_details.respondent.address_second_line)  
+        print("Respondent address town or city",case_details.respondent.address_town_or_city)
+        print("Respondent postcode ",case_details.respondent.address_postcode)
             
         
         
         
+        
+              
+            
+  
+    
+   
+    
     def open_file_dialog(self):
         root=tk.Tk()
         root.withdraw()
         filepath=filedialog.askopenfilename(
             title="Select File",
-            filetypes=[("SAP Files","*.ord"),("All Files","*.*")]
+            filetypes=[("pdf Files","*.pdf"),("All Files","*.*")]
         )
         return filepath
     
     
-        
     def on_show(self):
-        p = case_details.case_name
+        p = self.case_details.case_name
         pass
-
-    def update():
-        pass
+    def update(self):
+        self.case_details.order_mode = self.var.get()
 
     def back_step(self):
         #self.update(self.controller)
         self.controller.last_page()
 
     def front_step(self):
-        #self.update(self.controller)
+        self.update()
+       
         self.controller.next_page()
         
     def on_select():
@@ -279,8 +399,8 @@ class Start(BasePage,tk.Frame):
     
 
 
-		
-		
+        
+        
            
         
     
@@ -297,7 +417,8 @@ class Case (BasePage,tk.Frame):
         self.abbrev_applications=["Occupation","Molestation"]
         self.row_no = 0
         self.check_var = True
-        
+    
+    
 
 
         self.config(bg=BACKGROUND_COLOUR)
@@ -417,7 +538,7 @@ class Case (BasePage,tk.Frame):
         
         #THE FRAME FOR THE NEXT AND BACK BUTTONS WITH RELATED FUNCTION
         
-        self.bottom_frame=tk.Frame(self,bg=BACKGROUND_COLOUR,height=50)
+        self.bottom_frame=tk.Frame(self,bg=BACKGROUND_COLOUR,height=50) 
         self.bottom_frame.place(relx=0.5,rely=1.0,anchor='s',y=-20)
         self.bind("<Configure>", self.update_bottom_frame_width)  # Bind resize event
         #self.update_bottom_frame_width()
@@ -441,22 +562,25 @@ class Case (BasePage,tk.Frame):
         
         apple='applie'
     
-        if case_details.judge_rank:
-            self.combo_judge_rank=case_details.judge_rank
+        if self.case_details.judge_rank:
+            self.combo_judge_rank.set(self.case_details.judge_rank)
         else:
             self.combo_judge_rank.set("Deputy District Judge")
-        if case_details.judge_gender:
-            self.combo_judge_gender.set(case_details.judge_gender)
+        if self.case_details.judge_gender:
+            self.combo_judge_gender.set(self.case_details.judge_gender)
         else:
             self.combo_judge_gender.set("Male")
-        if case_details.judge_name:
-            self.entry_judge_name=case_details.judge_name
+        if self.case_details.judge_name:
+            self.entry_judge_name.delete(0,'end')
+            self.entry_judge_name.insert(0,self.case_details.judge_name)            
        
             
-        if case_details.case_number:
-            self.entry_case_number=case_details.case_number
+        if self.case_details.case_number:
+            self.entry_case_number.delete(0,'end')
+            self.entry_case_number.insert(0,self.case_details.case_number)
         else:
-            self.entry_case_number="ME 25 0924"
+            self.entry_case_number.delete(0,'end')
+            self.entry_case_number.insert(0,"ME 25 0924")
         
     def update_bottom_frame_width(self,event=None):
        self.bottom_frame.place_configure(width=self.winfo_width())
@@ -467,22 +591,21 @@ class Case (BasePage,tk.Frame):
             
     def update(self):
 
-        print(self.combo_judge_rank)
-        case_details.court_name=self.combo_court_name.get()
-        case_details.case_number=self.entry_case_number
-        case_details.judge_rank=self.combo_judge_rank.get()
-        case_details.judge_name=self.entry_judge_name.get()
-        case_details.relationship=self.relat_combo.get()
+        self.case_details.court_name=self.combo_court_name.get()
+        self.case_details.case_number=self.entry_case_number.get()
+        self.case_details.judge_rank=self.combo_judge_rank.get()
+        self.case_details.judge_name=self.entry_judge_name.get()
+        self.case_details.relationship=self.relat_combo.get()
         applications_string=self.combo_application.get()
         if self.abbrev_applications[1] in applications_string:
-            case_details.molestation_order=True
+            self.case_details.molestation_order=True
         if self.abbrev_applications[0] in applications_string:
-            case_details.occupation_order=True
+            self.case_details.occupation_order=True
        
         
         
-        case_details.judge_rank=self.combo_judge_rank.get()
-        case_details.judge_gender=self.combo_judge_gender.get()
+        self.case_details.judge_rank=self.combo_judge_rank.get()
+        self.case_details.judge_gender=self.combo_judge_gender.get()
             
 
         
@@ -541,16 +664,16 @@ class Property (BasePage,tk.Frame):
         self.grid_columnconfigure(0,weight=1)
         self.widgets_list=[]
         self.row_no=1
-		
+        
 #TITLE Frame
         self.top_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
         self.top_frame.grid(row=0,column=0,sticky='ew')
         page_title=tk.Label(self.top_frame,text="The Property ",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         self.top_frame.grid_columnconfigure(0,weight=1)
         page_title.grid(row=self.row_no,column=0, padx=0,pady=10,sticky='ew')
-		
+        
 #WIDGET Frame
-	
+    
         self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
         self.input_frame.grid(row=1,column=0,sticky='w')
         self.input_frame.grid_columnconfigure(0,weight=0)
@@ -640,7 +763,7 @@ class Applicant(BasePage,tk.Frame):
         self.grid_columnconfigure(0,weight=1)
         self.row_no=1
         #The Frame showing the Page Title
-		
+        
         self.top_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
         self.top_frame.grid(row=0,column=0,sticky='ew')
         page_title=tk.Label(self.top_frame,text="The Applicant ",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
@@ -753,25 +876,25 @@ class Applicant(BasePage,tk.Frame):
         self.bottom_frame.grid_columnconfigure(1,weight=1)
         
     def on_show(self):
-        if case_details.applicant.title=='':
+        if self.case_details.applicant.title=='':
             self.combo_title.set('Ms')
             self.gender_combo.set('Female')
         else:
-            self.combo_title.set(case_details.applicant.title)
-            self.gender_combo.set(case_details.applicant.gender)
+            self.combo_title.set(self.case_details.applicant.title)
+            self.gender_combo.set(self.case_details.applicant.gender)
             
         self.first_name_entry.delete(0,'end')
-        self.first_name_entry.insert(0,case_details.applicant.first_name)
+        self.first_name_entry.insert(0,self.case_details.applicant.first_name)
         self.surname_entry.delete(0,'end')
-        self.surname_entry.insert(0,case_details.applicant.last_name)
+        self.surname_entry.insert(0,self.case_details.applicant.last_name)
         self.add1_entry.delete(0,'end')
-        self.add1_entry.insert(0,case_details.applicant.address_building_and_street)
+        self.add1_entry.insert(0,self.case_details.applicant.address_building_and_street)
         self.add2_entry.delete(0,'end')
-        self.add2_entry.insert(0,case_details.applicant.address_second_line)
+        self.add2_entry.insert(0,self.case_details.applicant.address_second_line)
         self.town_entry.delete(0,'end')
-        self.town_entry.insert(0,case_details.applicant.address_town_or_city)
+        self.town_entry.insert(0,self.case_details.applicant.address_town_or_city)
         self.postcode_entry.delete(0,'end')
-        self.postcode_entry.insert(0,case_details.applicant.address_postcode)
+        self.postcode_entry.insert(0,self.case_details.applicant.address_postcode)
        
        
        
@@ -816,32 +939,32 @@ class Applicant(BasePage,tk.Frame):
         
         
     def update(self,controller):
-        case_details.applicant.title=self.combo_title.get()
+        self.case_details.applicant.title=self.combo_title.get()
         name1=self.first_name_entry.get()
         name2=self.surname_entry.get()
         full_name=f"{name1} {name2}"
-        case_details.applicant.first_name=name1
-        case_details.applicant.last_name=name2
-        case_details.applicant.full_name=full_name
+        self.case_details.applicant.first_name=name1
+        self.case_details.applicant.last_name=name2
+        self.case_details.applicant.full_name=full_name
         
-        case_details.applicant.full_name=case_details.applicant.first_name +" "+case_details.applicant.last_name
-        case_details.applicant.gender=self.gender_combo.get()
-        case_details.applicant.address_building_and_street=self.add1_entry.get()
-        case_details.applicant.address_second_line=self.add2_entry.get()
-        case_details.applicant.address_town_or_city=self.town_entry.get()
-        case_details.applicant.address_postcode=self.postcode_entry.get()
+        self.case_details.applicant.full_name=self.case_details.applicant.first_name +" "+self.case_details.applicant.last_name
+        self.case_details.applicant.gender=self.gender_combo.get()
+        self.case_details.applicant.address_building_and_street=self.add1_entry.get()
+        self.case_details.applicant.address_second_line=self.add2_entry.get()
+        self.case_details.applicant.address_town_or_city=self.town_entry.get()
+        self.case_details.applicant.address_postcode=self.postcode_entry.get()
         
-        case_details.applicant.set_pronouns()
-        case_details.applicant.set_full_name()
-        case_details.applicant.set_family_home()
+        self.case_details.applicant.set_pronouns()
+        self.case_details.applicant.set_full_name()
+        self.case_details.applicant.set_family_home()
         temp_var=self.check_var.get()
         if temp_var==1:
-            par_var = (f" The 'family home' is the property at {case_details.applicant.address_building_and_street}, "
-            f"{case_details.applicant.address_second_line}, "
-            f"{case_details.applicant.address_town_or_city}, " 
-            f"{case_details.applicant.address_postcode}")
-            case_details.definitions.append(par_var)
-            temp_var3=case_details.definitions[0]
+            par_var = (f" The 'family home' is the property at {self.case_details.applicant.address_building_and_street}, "
+            f"{self.case_details.applicant.address_second_line}, "
+            f"{self.case_details.applicant.address_town_or_city}, " 
+            f"{self.case_details.applicant.address_postcode}")
+            self.case_details.definitions.append(par_var)
+            temp_var3=self.case_details.definitions[0]
             temp_var3=temp_var3
             
             
@@ -872,7 +995,7 @@ class Respondent(BasePage,tk.Frame):
         self.row_no=1
         self.respondent_widgets=[]
         #The Frame showing the Page Title
-		
+        
         self.top_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
         self.top_frame.grid(row=0,column=0,sticky='ew')
         page_title=tk.Label(self.top_frame,text="The Respondent ",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
@@ -1001,32 +1124,32 @@ class Respondent(BasePage,tk.Frame):
         self.fill_widgets()
     
     def on_show(self):
-        if case_details.respondent.title=="":
+        if self.case_details.respondent.title=="":
             self.combo_title.set('Mr')
             self.gender_combo.set('Male')
         else:
-            self.combo_title.set(case_details.respondent.title)
-            self.gender_combo.set(case_details.respondent.gender)
+            self.combo_title.set(self.case_details.respondent.title)
+            self.gender_combo.set(self.case_details.respondent.gender)
         
         self.first_name_entry.delete(0,'end')
-        if case_details.respondent.first_name:
-            self.first_name_entry.insert(0,case_details.respondent.first_name)
-        if case_details.respondent.last_name:
+        if self.case_details.respondent.first_name:
+            self.first_name_entry.insert(0,self.case_details.respondent.first_name)
+        if self.case_details.respondent.last_name:
             self.surname_entry.delete(0,'end')
-            self.surname_entry.insert(0,case_details.respondent.last_name)
-        if case_details.respondent.address_building_and_street:
+            self.surname_entry.insert(0,self.case_details.respondent.last_name)
+        if self.case_details.respondent.address_building_and_street:
             self.add1_entry.delete(0,'end')
-            self.add1_entry.insert(0,case_details.respondent.address_building_and_street)
-        if case_details.respondent.address_second_line:
+            self.add1_entry.insert(0,self.case_details.respondent.address_building_and_street)
+        if self.case_details.respondent.address_second_line:
             self.add2_entry.delete(0,'end')
-            self.add2_entry.insert(0,case_details.respondent.address_second_line)
+            self.add2_entry.insert(0,self.case_details.respondent.address_second_line)
             
-        if case_details.respondent.address_town_or_city:
+        if self.case_details.respondent.address_town_or_city:
             self.town_entry.delete(0,'end')
-            self.town_entry.insert(0,case_details.respondent.address_town_or_city)
-        if case_details.respondent.address_postcode:
+            self.town_entry.insert(0,self.case_details.respondent.address_town_or_city)
+        if self.case_details.respondent.address_postcode:
             self.postcode_entry.delete(0,'end')
-            self.postcode_entry.insert(0,case_details.respondent.address_postcode)
+            self.postcode_entry.insert(0,self.case_details.respondent.address_postcode)
     
     def fill_widgets(self):
         if test_run==True:
@@ -1059,21 +1182,21 @@ class Respondent(BasePage,tk.Frame):
         
     def update(self,controller):
        
-        case_details.respondent.title=self.combo_title.get()
-        case_details.respondent.first_name=self.first_name_entry.get() 
-        case_details.respondent.last_name=self.surname_entry.get()
-        case_details.respondent.gender=self.gender_combo.get()
-        case_details.respondent.address_building_and_street=self.add1_entry.get()
-        case_details.respondent.address_second_line=self.add2_entry.get()
-        case_details.respondent.address_town_or_city=self.town_entry.get()
-        case_details.respondent.address_postcode=self.postcode_entry.get()
-        case_details.respondent.set_pronouns()
-        case_details.respondent.set_full_name()
+        self.case_details.respondent.title=self.combo_title.get()
+        self.case_details.respondent.first_name=self.first_name_entry.get() 
+        self.case_details.respondent.last_name=self.surname_entry.get()
+        self.case_details.respondent.gender=self.gender_combo.get()
+        self.case_details.respondent.address_building_and_street=self.add1_entry.get()
+        self.case_details.respondent.address_second_line=self.add2_entry.get()
+        self.case_details.respondent.address_town_or_city=self.town_entry.get()
+        self.case_details.respondent.address_postcode=self.postcode_entry.get()
+        self.case_details.respondent.set_pronouns()
+        self.case_details.respondent.set_full_name()
         
          
          
         
-	
+    
 class Hearing(BasePage,tk.Frame):
     def __init__(self,parent,controller,case_details):
         
@@ -1095,8 +1218,8 @@ class Hearing(BasePage,tk.Frame):
         notices=['On Notice','Without Notice','On Short Notice']
         self.reasons=["Risk of harm","Urgency","welfare of children","Frustrate order"]
         
-		
-		#THE FRAME SHOWING THE PAGE TITLE
+        
+        #THE FRAME SHOWING THE PAGE TITLE
         
         self.top_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
         self.top_frame.grid(row=0,column=0,sticky='ew')
@@ -1177,6 +1300,26 @@ class Hearing(BasePage,tk.Frame):
         self.row_no+=1
         
         #CONSENT ORDER 
+        # Witness name entry (used for Without Notice hearings)
+        self.wit_name1_text = tk.Entry(self.input_frame)
+        self.wit_name1_text.grid(row=self.row_no, column=1, padx=10, pady=10, sticky='w')
+        self.wit_name1_text.grid_remove()   # hide by default
+        self.wit_name1_label = tk.Label(self.input_frame, text="Witness Name")
+        self.wit_name1_label.config(bg=BACKGROUND_COLOUR, fg=FOREGROUND_COLOUR)
+        self.wit_name1_label.grid(row=self.row_no, column=0, padx=10, pady=10, sticky='w')
+        self.wit_name1_label.grid_remove()
+
+        self.dated_label = tk.Label(self.input_frame, text="Dated")
+        self.dated_label.config(bg=BACKGROUND_COLOUR, fg=FOREGROUND_COLOUR)
+        self.dated_label.grid(row=self.row_no+1, column=0, padx=10, pady=10, sticky='w')
+        self.dated_label.grid_remove()
+
+        self.statements_label = tk.Label(self.input_frame, text="Statements Read")
+        self.statements_label.config(bg=BACKGROUND_COLOUR, fg=FOREGROUND_COLOUR)
+        self.statements_label.grid(row=self.row_no+2, column=0, padx=10, pady=10, sticky='w')   
+        self.statements_label.grid_remove()
+
+
         
         
         #STATEMENT READ
@@ -1216,15 +1359,27 @@ class Hearing(BasePage,tk.Frame):
         label_rep_name.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
         app_rep_name=tk.Entry(self.input_frame)
         app_rep_name.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
-        self.row_no+=1
+        self.row_no+=2
         
         
         resp_appearance_label=tk.Label(self.input_frame,text="Respondent")
         resp_appearance_label.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=("Helvetica,12"))
-        resp_appearance_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='e')
+        resp_appearance_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
         resp_appearance_combo=ttk.Combobox(self.input_frame,values =appearance_values)
         resp_appearance_combo.current(0)
+        resp_appearance_combo.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
+        self.row_no+=1
+        resp_rep_type="Counsel"
+        label_resp_rep_name_text=f"Name of {resp_rep_type}"
+        label_resp_rep_name=tk.Label(self.input_frame,text=label_resp_rep_name_text)
+        label_resp_rep_name.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
+        label_resp_rep_name=tk.Label(self.input_frame,text=label_rep_name_text)
+        label_resp_rep_name.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         resp_appearance_combo.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='e')
+        self.row_no+=1
+        resp_app__name=tk.Entry(self.input_frame)
+        resp_app__name.grid(row= self.row_no,column=0,padx=10,pady=10,sticky='w')
+        
         
        
         
@@ -1300,7 +1455,7 @@ class Hearing(BasePage,tk.Frame):
             self.wit_name1_text.grid()
             self.dated_label.grid()
             self.stat_date.grid()
-            wit_name=case_details.applicant.full_name
+            wit_name=self.case_details.applicant.full_name
             self.wit_name1_text.insert(0,wit_name)
             
             
@@ -1322,19 +1477,19 @@ class Hearing(BasePage,tk.Frame):
         
         
     def on_show(self):
-        self.cal.set_date(case_details.hearing_date_object)
-        if case_details.listed_for:
-            self.comb_listed_for.set(case_details.listed_for)
-        if case_details.notice:
-            self.combo_notice.set(case_details.notice)
+        self.cal.set_date(self.case_details.hearing_date_object)
+        if self.case_details.listed_for:
+            self.comb_listed_for.set(self.case_details.listed_for)
+        if self.case_details.notice:
+            self.combo_notice.set(self.case_details.notice)
             
-        if case_details.applicant.full_name:
+        if self.case_details.applicant.full_name:
           pass
             
         else:
-            self.combo_notice=="Without Notice"
+            self.combo_notice.set("Without Notice")
                 
-        if case_details.notice=="On Notice":
+        if self.case_details.notice=="On Notice":
             self.label_notice_reason.grid_forget()
             self.combo_reasons.grid_forget()
             self.combo_reasons.config(state='disabled')
@@ -1346,19 +1501,9 @@ class Hearing(BasePage,tk.Frame):
             self.label_notice_reason.grid_remove()
             self.combo_reasons.grid_remove()
             
-        if case_details.reasons:   
-            self.combo_reasons.set(case_details.reasons)
-        # self.combo_app_rep_title.set(case_details.app_rep.title)
-        # self.entry_app_repN1.delete(0,'end')
-        # self.entry_app_repN1.insert(0,case_details.app_rep.first_name)  
-        # self.entry_app_repN2.delete(0,'end')
-        # self.entry_app_repN2.insert(0,case_details.app_rep.last_name)
-        # self.combo_resp_rep_title.set(case_details.resp_rep.title)
-        # self.entry_resp_repN1.delete(0,'end')
-        # self.entry_resp_repN1.insert(0,case_details.resp_rep.first_name)
-        # self.entry_resp_repN2.delete(0,'end')
-        # self.entry_resp_repN2.insert(0,case_details.resp_rep.last_name)
-
+        if self.case_details.reasons:   
+            self.combo_reasons.set(self.case_details.reasons)
+     
 
 
         
@@ -1372,13 +1517,14 @@ class Hearing(BasePage,tk.Frame):
             self.controller.next_page()
             
     def update(self):
-        case_details.notice=""
+        self.case_details.notice=""
         hearing_date_string= self.cal.get()
         hearing_date_object = datetime.strptime(hearing_date_string, '%d-%m-%Y').date()
-        case_details.hearing_date_object=hearing_date_object
+        self.case_details.hearing_date_object=hearing_date_object
         l_for =self.comb_listed_for.current()
-        case_details.notice=self.combo_notice.get()
-        case_details.app_rep.set_full_name()
+        self.case_details.listed_for=self.comb_listed_for.get()
+        self.case_details.notice=self.combo_notice.get()
+        self.case_details.app_rep.set_full_name()
         
         
          
@@ -1386,7 +1532,7 @@ class Hearing(BasePage,tk.Frame):
         
          
 
-        case_details.reasons=self.combo_reasons.get()
+        self.case_details.reasons=self.combo_reasons.get()
          
             
         
@@ -1548,15 +1694,13 @@ class  Children(BasePage,tk.Frame):
     #FUNCTIONS CHILDREN
     def detect_sex(self,event):
         first_name=self.child_widgets['name1'].get().strip().title()
-        if first_name in boy_names_set:
+        if first_name in boy_names:
             self.child_widgets['gender'].set('Boy')
-            print('boy')
-        elif first_name in girl_names_set:
+         
+        elif first_name in girl_names:
              self.child_widgets['gender'].set('Girl')
-             print('girl')
         else:
             self.child_widgets['gender'].set("")
-            print('not found')
         
         
     def latest_dob(self):
@@ -1578,7 +1722,7 @@ class  Children(BasePage,tk.Frame):
     def fill_widgets(self):
         
             widget_values=[]
-            the_surname=case_details.respondent.last_name
+            the_surname=self.case_details.respondent.last_name
             child1=('Arthur',the_surname,'boy','01','01','2021')
             widget_values.append(child1)
             child2=('Belinda',the_surname,'girl','02','02','2022')
@@ -1666,19 +1810,20 @@ class  Children(BasePage,tk.Frame):
         
        
         
-        if case_details.children:
-            case_details.children = sorted(case_details.children, key=lambda child: child.birthday_object)
-            for child in case_details.children:
+        if self.case_details.children:
+            a=len(self.case_details.children)
+            self.case_details.children = sorted(self.case_details.children, key=lambda child: child.birthday_object)
+            for child in self.case_details.children:
                 self.show_the_kids(child)
                 self.row_no+=1
                 
-            case_details.children.clear()
+            self.case_details.children.clear()
             
-        if case_details:
-            if len(case_details.children)==0:
-                if case_details.relationship=="Marriage":
-                    t =case_details.respondent.last_name
-                else: t= case_details.applicant.last_name
+        if self.case_details:
+            if len(self.case_details.children)==0:
+                if self.case_details.relationship=="Marriage":
+                    t =self.case_details.respondent.last_name
+                else: t= self.case_details.applicant.last_name
                 if t!='':
                     self.child_widgets['name2'].insert(0,t)
             
@@ -1716,8 +1861,8 @@ class  Children(BasePage,tk.Frame):
            
             child=Child(name1,name2,gender,birthday_date_object)
             
-            case_details.children.append(child)
-            for child in case_details.children:
+            self.case_details.children.append(child)
+            for child in self.case_details.children:
                 child.sentence=f"{child.first_name} {child.last_name}, a {child.gender} born on {birthday}." 
             
         for widget_dict in self.child_widgets_list:
@@ -1847,7 +1992,7 @@ class Recitals(BasePage,tk.Frame):
        
         self.checkbox_vars=[]
         self.row_no=0
-		
+        
         #RECITALS THE FRAME SHOWING THE PAGE TITLE
         self.row_no +=1
         self.top_frame=tk.Frame(self,bg='lightblue')
@@ -1932,7 +2077,7 @@ class Recitals(BasePage,tk.Frame):
     def on_show(self):
         
         self.wit_name1_text.delete(0,tk.END)
-        self.wit_name1_text.insert(0,case_details.applicant.full_name)
+        self.wit_name1_text.insert(0,self.case_details.applicant.full_name)
     
     def back_step(self):
         tempvar=self.case_details.notice
@@ -1944,27 +2089,27 @@ class Recitals(BasePage,tk.Frame):
         self.controller.next_page()
         
     def update(self):
-        if case_details.molestation_order:
+        if self.case_details.molestation_order:
             app_type= "a non-molestation order "
-            if case_details.occupation_order:
+            if self.case_details.occupation_order:
                 app_type +="and an occupation order"
-        elif case_details.occupation_order:
+        elif self.case_details.occupation_order:
             app_type="an occupation order"
         else:
             app_type="an order"
         
-        if len(case_details.children)>1: 
+        if len(self.case_details.children)>1: 
             child_no=" children "
         else:
             child_no= "child "
         reason ="" 
-        if case_details.reasons=="Urgency":
+        if self.case_details.reasons=="Urgency":
             reason = "because the matter is urgent"
-        elif case_details.reasons=="Risk of harm":
+        elif self.case_details.reasons=="Risk of harm":
             reason = " because there would be a risk of harm to the Applicant if the Respondent knew about this application in advance"
-        elif case_details.reasons=="welfare of children":
+        elif self.case_details.reasons=="welfare of children":
             reason = f" because there would be a risk to the welfare of the {child_no} if the Respondent knew about this application in advance"
-        elif case_details.reasons=="Frustrate order":
+        elif self.case_details.reasons=="Frustrate order":
             reason = f" because it is feared that the order would be frustrated if the Respondent knew about this application in advance. "
         else:
             pass
@@ -1976,21 +2121,21 @@ class Recitals(BasePage,tk.Frame):
         
         
         artic=self.article(app_type)
-        the_notice = case_details.notice_string
+        the_notice = self.case_details.notice_string
         the_notice=the_notice.lower()
         
-        if type(case_details.application) is not int:
-            app_type=case_details.application
+        if type(self.case_details.application) is not int:
+            app_type=self.case_details.application
             app_type.lower()
             
        
         recitals_dict={
             "Standard":(
                 f"This is {app_type} made against the Respondent "
-            f"{case_details.respondent.first_name}  {case_details.respondent.last_name} on "
-            f"{case_details.hearing_date_object.strftime('%d %B %Y').replace(' 0', ' ') if case_details.hearing_date_object.day < 10 else case_details.hearing_date_object.strftime('%d %B %Y')} "
-            f"by {case_details.judge_rank} {case_details.judge_name} "
-            f"on the application of the Appplicant {case_details.applicant.first_name}  {case_details.applicant.last_name}"
+            f"{self.case_details.respondent.first_name}  {self.case_details.respondent.last_name} on "
+            f"{self.case_details.hearing_date_object.strftime('%d %B %Y').replace(' 0', ' ') if self.case_details.hearing_date_object.day < 10 else self.case_details.hearing_date_object.strftime('%d %B %Y')} "
+            f"by {self.case_details.judge_rank} {self.case_details.judge_name} "
+            f"on the application of the Appplicant {self.case_details.applicant.first_name}  {self.case_details.applicant.last_name}"
             ),
             
              "Legal Aid":("The court records the following information for the purposes of the Family Advocacy Scheme (FAS):\n"
@@ -2006,7 +2151,7 @@ class Recitals(BasePage,tk.Frame):
                      "this case is suitable for hearing remotely (“remote hearing”) by means of [insert]."),
             "Prohibition of Cross-Examination":"Some random placeholder text",
             "Short Notice":(f"This order was made at a hearing {the_notice.lower()} to the respondent."
-            f"The reason why the order was made {the_notice.lower()} to the respondent was {case_details.reasons}."
+            f"The reason why the order was made {the_notice.lower()} to the respondent was {self.case_details.reasons}."
             f"The respondent has the right to apply to the court to vary or discharge the order" 
             f" see paragraph  below."),
             "On Notice":"This order was made at a hearing on notice to the respondent.",
@@ -2016,9 +2161,9 @@ class Recitals(BasePage,tk.Frame):
             
         }
         recitals_list=["Standard"]
-        if case_details.notice =='Short Notice':
+        if self.case_details.notice =='Short Notice':
                 recitals_list.append("On Notice")
-        elif case_details.notice=="Without Notice":
+        elif self.case_details.notice=="Without Notice":
             recitals_list.append("Without Notice")
         else:
             recitals_list.append("On Notice")
@@ -2032,9 +2177,9 @@ class Recitals(BasePage,tk.Frame):
                 recitals_list.append(text)
                 
         for key in recitals_list:
-            case_details.recitals.append(recitals_dict[key])
+            self.case_details.recitals.append(recitals_dict[key])
         
-        tempvar = case_details.notice
+        tempvar = self.case_details.notice
             
                      
         
@@ -2071,8 +2216,8 @@ class Undertakings(BasePage,tk.Frame):
         self.top_frame.grid(row=0,column=0,sticky='ew')
         page_title=tk.Label(self.top_frame,text="Recitals",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         self.top_frame.grid_columnconfigure(0,weight=1)
-		
-		#UNDERTAKINGS THE FRAME SHOWING THE PAGE TITLE
+        
+        #UNDERTAKINGS THE FRAME SHOWING THE PAGE TITLE
         self.row_no +=1
         self.top_frame=tk.Frame(self,bg='lightblue')
         self.top_frame.grid(row=0,column=0,sticky='ew')
@@ -2122,8 +2267,8 @@ class Undertakings(BasePage,tk.Frame):
         
         
 
-		
-	#UNDERTAKINGS:THE FRAME FOR THE NEXT AND BACK BUTTONS WITH RELATED FUNCTION
+        
+    #UNDERTAKINGS:THE FRAME FOR THE NEXT AND BACK BUTTONS WITH RELATED FUNCTION
   
         self.bottom_frame=tk.Frame(self,bg=BACKGROUND_COLOUR,height=50)
         self.bottom_frame.place(relx=0.5,rely=1.0,anchor='s',y=-20)
@@ -2139,15 +2284,15 @@ class Undertakings(BasePage,tk.Frame):
         next_button.grid(row=1,column=1,padx=10,pady=(0,10), sticky='e')
         self.bottom_frame.grid_columnconfigure(0,weight =1)
         self.bottom_frame.grid_columnconfigure(1,weight=1)
-		
-	
+        
+    
 #UNDERTAKINGS FUNCTIONS
     def update_bottom_frame_width(self,event=None):
        self.bottom_frame.place_configure(width=self.winfo_width())
        
     def on_show(self):
         pass
-	   
+       
     def last_action(self):
             self.update()
             self.controller.last_page()
@@ -2183,16 +2328,9 @@ class Undertakings(BasePage,tk.Frame):
            
             if var.get()==1:
                 txt_para=Undertakings_dict [text]
-                case_details.undertakings.append(txt_para)
+                self.case_details.undertakings.append(txt_para)
                 
-        if case_details.notice !="on notice":
-            parpar=("The statement of service of this order on the respondent shall be filed at court and shall be in a form "
-            "which complies with section 9 of the Criminal Justice Act 1967 and shall include the following signed declaration:"
-            "'This statement is true tot he best of my knowledge and belief and I make it knowing that, "
-            "if it were tendered in evidence, I would be liable for prosecution if I wilfully stated in it anything which I know to "
-            "be false or did not believe to be true'")
-            case_details.undertakings.append(parpar)
-            
+       
             
 class all_Orders(BasePage):
     def __init__(self, parent, controller, case_details):
@@ -2204,7 +2342,7 @@ class all_Orders(BasePage):
         self.grid_columnconfigure(0,weight=1)
         self.widgets_list=[]
         self.row_no=1
-		
+        
 #TITLE Frame
 
         self.top_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
@@ -2212,7 +2350,7 @@ class all_Orders(BasePage):
         page_title=tk.Label(self.top_frame,text="Orders ",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         self.top_frame.grid_columnconfigure(0,weight=1)
         page_title.grid(row=self.row_no,column=0, padx=0,pady=10,sticky='ew')
-		
+        
 #WIDGET Frame
         
         self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
@@ -2303,7 +2441,7 @@ class OccOrders(BasePage):
         self.grid(sticky='nsew')
         self.grid_columnconfigure(0,weight=1)
         self.row_no=0
-		
+        
         #OCCUPATION ORDERS (test) THE FRAME SHOWING THE PAGE TITLE
         self.row_no +=1
         self.top_frame=tk.Frame(self,bg='lightblue')
@@ -2368,7 +2506,7 @@ class OccOrders(BasePage):
             
             self.input_frame.grid_columnconfigure(0,weight=1)
             self.input_frame.grid_columnconfigure(1,weight=1)        
-		
+        
         
          #THE FRAME FOR THE NEXT AND BACK BUTTONS WITH RELATED FUNCTION
         
@@ -2392,7 +2530,7 @@ class OccOrders(BasePage):
     def update(self):
         for i, var in enumerate(self.checkbox_col1_vars):
             if var.get() == 1:  # If the checkbox is checked
-                case_details.order_choices.append(self.checkbox_texts_col1[i])
+                self.case_details.order_choices.append(self.checkbox_texts_col1[i])
                 
       
         
@@ -2424,7 +2562,7 @@ class NonMols(BasePage):
         self.grid(sticky='nsew')
         self.grid_columnconfigure(0,weight=1)
         self.row_no=0
-		
+        
         #NON MOLESTATION  ORDERS THE FRAME SHOWING THE PAGE TITLE
         self.row_no +=1
         self.top_frame=tk.Frame(self,bg='lightblue')
@@ -2485,7 +2623,7 @@ class NonMols(BasePage):
             
         self.input_frame.grid_columnconfigure(0,weight=1)
         self.input_frame.grid_columnconfigure(1,weight=1)        
-		
+        
         
          #THE FRAME FOR THE NEXT AND BACK BUTTONS WITH RELATED FUNCTION
         
@@ -2510,7 +2648,7 @@ class NonMols(BasePage):
         #The following puts the checkbox text of ticked checkboxes in the list case_details.order_choices
         for i, var in enumerate(self.checkbox_col1_vars):
             if var.get() == 1:  # If the checkbox is checked
-                 case_details.order_choices.append(self.checkbox_texts_col1[i])
+                 self.case_details.order_choices.append(self.checkbox_texts_col1[i])
         
         
         
@@ -2553,7 +2691,7 @@ class Directions(BasePage,tk.Frame):
         self.grid(sticky='nsew')
         self.grid_columnconfigure(0,weight=1)
         self.row_no=0
-		
+        
         #DIRECTIONS THE FRAME SHOWING THE PAGE TITLE
         self.row_no +=1
         self.top_frame=tk.Frame(self,bg='lightblue')
@@ -2601,7 +2739,7 @@ class Directions(BasePage,tk.Frame):
             
         self.input_frame.grid_columnconfigure(0,weight=1)
         self.input_frame.grid_columnconfigure(1,weight=1)        
-		
+        
         
          #THE FRAME FOR THE NEXT AND BACK BUTTONS WITH RELATED FUNCTION
         
@@ -2626,7 +2764,7 @@ class Directions(BasePage,tk.Frame):
         #The following puts the checkbox text of ticked checkboxes in the list case_details.order_choices
         for i, var in enumerate(self.checkbox_col1_vars):
             if var.get() == 1:  # If the checkbox is checked
-                 case_details.directions.append(self.checkbox_texts_col1[i])
+                 self.case_details.directions.append(self.checkbox_texts_col1[i])
                  
       
 
@@ -2707,8 +2845,8 @@ class Duration(BasePage,tk.Frame):
         next_button.grid(row=1,column=1,padx=10,pady=(0,10), sticky='e')
         self.bottom_frame.grid_columnconfigure(0,weight =1)
         self.bottom_frame.grid_columnconfigure(1,weight=1)
-		
-	
+        
+    
 #DURATION FUNCTIONS
     def update_bottom_frame_width(self,event=None):
        self.bottom_frame.place_configure(width=self.winfo_width())
@@ -2750,17 +2888,17 @@ class Duration(BasePage,tk.Frame):
     def update(self):
         from datetime import date, timedelta
         app_name=[]
-        app_name1 =case_details.applicant.first_name
-        app_name2=case_details.applicant.last_name
+        app_name1 =self.case_details.applicant.first_name
+        app_name2=self.case_details.applicant.last_name
         app_name=app_name1+" "+app_name2
-        resp_name1=case_details.respondent.first_name
-        resp_name2=case_details.respondent.last_name
+        resp_name1=self.case_details.respondent.first_name
+        resp_name2=self.case_details.respondent.last_name
         resp_name=resp_name1+" "+resp_name2
               
-        mat_home1=case_details.applicant.address_building_and_street
-        mat_home2=case_details.applicant.address_second_line
-        mat_home3=case_details.applicant.address_town_or_city
-        mat_home4=case_details.applicant.address_postcode
+        mat_home1=self.case_details.applicant.address_building_and_street
+        mat_home2=self.case_details.applicant.address_second_line
+        mat_home3=self.case_details.applicant.address_town_or_city
+        mat_home4=self.case_details.applicant.address_postcode
         mat_home=mat_home1+", "+mat_home2+", "+mat_home3+", "+mat_home4
         relat=self.case_details.relationship
         tody=date.today()
@@ -2774,12 +2912,12 @@ class Duration(BasePage,tk.Frame):
             
             tempdate=self.add_time(mnths)
             form_ord_last=self.format_date(tempdate)
-            case_details.order_last=form_ord_last
+            self.case_details.order_last=form_ord_last
         
-        tempord1=f"This order shall be effective against the respondent {resp_name} once it is personally served on {case_details.respondent.accusative}."
-        case_details.orders.append(tempord1)
-        tempord2 =f"This order shall last until {case_details.order_last} unless it is set aside or varied before then by an order of the court."   
-        case_details.orders.append(tempord2)
+        tempord1=f"This order shall be effective against the respondent {resp_name} once it is personally served on {self.case_details.respondent.accusative}."
+        self.case_details.orders.append(tempord1)
+        tempord2 =f"This order shall last until {self.case_details.order_last} unless it is set aside or varied before then by an order of the court."   
+        self.case_details.orders.append(tempord2)
         
        
         
@@ -2796,7 +2934,7 @@ class Actions(BasePage,tk.Frame):
         self.grid_columnconfigure(0,weight=1)
         self.widgets_list=[]
         self.row_no=1
-		
+        
 #TITLE Frame
 
         self.top_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
@@ -2804,7 +2942,7 @@ class Actions(BasePage,tk.Frame):
         page_title=tk.Label(self.top_frame,text="Actions",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         self.top_frame.grid_columnconfigure(0,weight=1)
         page_title.grid(row=self.row_no,column=0, padx=0,pady=10,sticky='ew')
-		
+        
 #WIDGET Frame
         
         self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
@@ -2869,14 +3007,14 @@ class Actions(BasePage,tk.Frame):
         
     def produce_order(self):
         self.case_details.name_file()
-        write_order(case_details=case_details)
+        write_order(case_details=self.case_details)
         
     def save_file(self):
         self.case_details.name_file()
         suffix ='.ord'
-        file_name =case_details.file_name+suffix
+        file_name =self.case_details.file_name+suffix
         with open(file_name, 'wb') as file:
-            pickle.dump(case_details, file)
+            pickle.dump(self.case_details, file)
     
         
 #HEADER
@@ -2895,16 +3033,16 @@ class Further_Info(BasePage,tk.Frame):
         self.combo_list=[]
 
         self.row_no=1
-		
+        
 #TITLE Frame
         self.top_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
         self.top_frame.grid(row=0,column=0,sticky='ew')
         page_title=tk.Label(self.top_frame,text="Further Information ",font=bigFont,bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
         self.top_frame.grid_columnconfigure(0,weight=1)
         page_title.grid(row=self.row_no,column=0, padx=0,pady=10,sticky='ew')
-		
+        
 #WIDGET Frame
-	
+    
         self.input_frame=tk.Frame(self,bg=BACKGROUND_COLOUR)
         self.input_frame.grid(row=1,column=0,sticky='w')
         self.input_frame.grid_columnconfigure(0,weight=0)
@@ -3007,10 +3145,10 @@ class Further_Info(BasePage,tk.Frame):
 
     def update(self):
         if self.chk_consent==True:
-            case_details.consent_order=True
+            self.case_details.consent_order=True
             
-        case_details.effective =  self.comb_effect.get()
-        case_details.order_last= self.combo_or_last.get()
+        self.case_details.effective =  self.comb_effect.get()
+        self.case_details.order_last= self.combo_or_last.get()
        
            
         
@@ -3030,11 +3168,11 @@ class Further_Info(BasePage,tk.Frame):
             self.controller.next_page()
             
     def produce_order(self):
-        write_order(case_details)
+        write_order(self.case_details)
     
     def save_file(self):
        
-        filename=f"{case_details.applicant.last_name} v {case_details.respondent.last_name} {case_details.case_number}"
+        filename=f"{self.case_details.applicant.last_name} v {self.case_details.respondent.last_name} {self.case_details.case_number}"
         filename=filename+".json"
 
         

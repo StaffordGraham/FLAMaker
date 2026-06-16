@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 from tkcalendar import Calendar
-from Person import Person
+from classes.Person import Person
 from CaseDetails import CaseDetails
 from datetime import datetime
 from tkcalendar import DateEntry
@@ -12,8 +12,8 @@ from docx import Document
 from docx.oxml import OxmlElement
 from docx.shared import Cm
 from docx.shared import Inches
-import functions
-from functions import article
+import utils.functions as functions
+from utils.functions import article
 from datetime import date, timedelta
 
 import sys
@@ -37,7 +37,7 @@ def write_order(case_details):
         coat_of_arms_cell =heading_table.cell(0,0)
         court_name_cell=heading_table.cell(0,1)
         case_number_cell=heading_table.cell(0,2)
-        coat_of_arms_cell.paragraphs[0].add_run().add_picture('Coat_of_arms.png',width=Inches(1.25))
+        # coat_of_arms_cell.paragraphs[0].add_run().add_picture('Coat_of_arms.png',width=Inches(1.25))
         court_name_paragraph=court_name_cell.paragraphs[0]
         court_name_run=court_name_paragraph.add_run(court_name)
         court_name_run.bold=True
@@ -105,7 +105,7 @@ def write_order(case_details):
             child_full_name =child.first_name + " "+child.last_name
             child_table.cell(i, 0).text = child_full_name  # Name
             child_table.cell(i, 1).text = child.gender # Gender
-            child_table.cell(i, 2).text = child.full_date_of_birth  # Date of Birth (convert to string if necessary)
+            child_table.cell(i, 2).text = child.dob  # Date of Birth (convert to string if necessary)
         
         doc.add_paragraph()
         
@@ -244,12 +244,7 @@ def write_order(case_details):
                
         
         #UNDERTAKINGS
-        if len(case_details.undertakings)>0:
-            undertakings_para_head=doc.add_paragraph()
-            ut_rn=undertakings_para_head.add_run('Undertakings')
-            ut_rn.bold=True
-            for upara in case_details.undertakings:
-                doc.add_paragraph(upara,style='ListNumber')
+       
             
         
         
@@ -490,8 +485,19 @@ def write_order(case_details):
         
         
         file_path=f"{case_details.file_name}.docx"
-        doc.save(file_path)
-        os.name='nt'
+        try:
+            doc.save(file_path)
+        except PermissionError:
+            fallback= f"{case_details.file_name} (CLOSED FILE).docx"
+            doc.save(fallback)
+            messagebox.showwarning("File In Use",
+        f"The file:\n\n{file_path}\n\nis currently open in Word "
+        f"and could not be overwritten.\n\n"
+        f"A new copy has been saved as:\n\n{fallback}"
+    )
+                
+            
+       
         os.startfile(file_path)
 
     
