@@ -9,13 +9,46 @@ import pdfplumber
 from classes.Person import Person
 from classes.Child import Child
 
-with open(os.path.join("data", "girl_names_set.pkl"), "rb") as f:
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+
+with open(os.path.join(DATA_DIR, "girl_names_set.pkl"), "rb") as f:
     girl_names = pickle.load(f)
-with open(os.path.join("data", "boy_names_set.pkl"), "rb") as f:
+with open(os.path.join(DATA_DIR, "boy_names_set.pkl"), "rb") as f:
     boy_names = pickle.load(f)
+    
+def standard_entries(case_details):
+    std_non_mol=[]
+    std_occ_ord=[]
+    std_recital=[]
+
+    std_non_mol.append( "Use or threaten violence")
+    std_non_mol.append("Not intimidate,harass or pester")
+    std_non_mol.append("Not communicate")
+    std_non_mol.append("Not damage property")
+    std_non_mol.append("Not damage family home")
+    std_occ_ord.append("Declaration of Mat Home Rights",)
+    std_occ_ord.append("R Allow Occupy  of Mat Home")
+    std_occ_ord.append("R Allow Occupy  of Mat Home")
+    std_occ_ord.append( "R Must Not Occupy Mat Home")
+    std_occ_ord.append("R Not Return to Mat Home")
+    std_recital.append("Upon reading the statement of the Applicant dated ")
+    if case_details.molestation_order==True:
+        case_details.orders.extend(std_non_mol)
+        
+    if case_details.occupation_order==True:
+        case_details.orders.extend(std_occ_ord)
+    
+
+
+
+
+    
+    
+
 
 def detect_gender(first_name: str) -> str:
-    name = first_name.strip().lower()
+    # The name sets are stored in title case, e.g. "Archer"
+    name = first_name.strip().title()
 
     if name in girl_names:
         return "Female"
@@ -23,17 +56,59 @@ def detect_gender(first_name: str) -> str:
         return "Male"
     return ""   # unknown / ambiguous
 
+def is_ticked(value):
+    # PDF form checkboxes come through as e.g. "/Yes" or "/Off"; the OCR extractor gives True/False
+    if isinstance(value, bool):
+        return value
+    return value not in (None, "", "/Off", "Off")
+
+RELATIONSHIP_NAMES = {
+    "married": "Marriage",
+    "formerly_married": "Marriage",
+    "engaged": "Engaged",
+    "formerly_engaged": "Engaged",
+    "live_together": "Cohabitee",
+    "formerly_lived_together": "Cohabitee",
+    "cohabitees": "Cohabitee",
+    "former_cohabitees": "Cohabitee",
+    "partner_not_living_together": "Intimate Significant Duration",
+    "former_partner_not_living_together": "Intimate Significant Duration",
+    "partners_not_living_together": "Intimate Significant Duration",
+    "former_partners_not_living_together": "Intimate Significant Duration",
+}
+
+def relationship_from_json(rel):
+    # Form-field extractor: {"married": "/Yes", ...}; OCR extractor: {"relationship_category": "married"}
+    if isinstance(rel, str):
+        return rel
+    if not isinstance(rel, dict):
+        return ""
+    category = rel.get("relationship_category")
+    if category:
+        return RELATIONSHIP_NAMES.get(category, "")
+    for key, name in RELATIONSHIP_NAMES.items():
+        if is_ticked(rel.get(key)):
+            return name
+    return ""
+
 def json_to_case_details(data_json, case_details):
     # 1. Basic fields
-    case_details.relationship = data_json.get("relationship", "")
+    case_details.relationship = relationship_from_json(data_json.get("relationship"))
     case_details.case_number = data_json.get("case_number", "")
     case_details.court_name = data_json.get("court_name", "")
-    case_details.notice = "Without Notice" if data_json.get("without_notice") else "On Notice"
+
+    # Only the "Yes" box counts - the "No" box being ticked must not make it a without notice hearing
+    wn = data_json.get("without_notice") or {}
+    without_notice = is_ticked(wn.get("apply_yes")) or wn.get("without_notice") is True
+    case_details.notice = "Without Notice" if without_notice else "On Notice"
     case_details.reasons = data_json.get("reasons", "")
 
     # 2. Application type
-    case_details.molestation_order = data_json.get("nonmol", False)
-    case_details.occupation_order = data_json.get("occupation", False)
+    nonmol = data_json.get("nonmol") or {}
+    orders_requested = data_json.get("orders_requested") or {}
+    case_details.molestation_order = (is_ticked(nonmol.get("apply_yes"))
+                                      or orders_requested.get("non_molestation_order") is True)
+    case_details.occupation_order = orders_requested.get("occupation_order") is True
 
     if case_details.molestation_order and case_details.occupation_order:
         case_details.application = "Occupation & Non-molestation"
@@ -44,16 +119,26 @@ def json_to_case_details(data_json, case_details):
     else:
         case_details.application = ""
     # 3. Applicant
-    app = data_json.get("applicant", {})
+    app = data_json.get("applicant") or {}
+    app_addr = app.get("address") or {}
     case_details.applicant.first_name = app.get("first_name", "")
     case_details.applicant.last_name = app.get("last_name", "")
-    case_details.applicant.address = app.get("address", "")
-    case_details.applicant.postcode = app.get("postcode", "")
+    case_details.applicant.address_building_and_street = app_addr.get("line1", "")
+    case_details.applicant.address_second_line = app_addr.get("line2", "")
+    case_details.applicant.address_town_or_city = app_addr.get("town", "")
+    case_details.applicant.address_postcode = app_addr.get("postcode", "")
     case_details.applicant.gender=detect_gender(case_details.applicant.first_name)
+    case_details.applicant.set_pronouns()
+
+    # FL401 question 2.4: can the applicant's contact details be shared with the respondent?
+    if is_ticked(app.get("share_contact_details_no")):
+        case_details.app_address_secret = True
+    elif is_ticked(app.get("share_contact_details_yes")):
+        case_details.app_address_secret = False
 
     # 4. Respondent
-    resp = data_json.get("respondent", {})
-    addr = resp.get("address", {})
+    resp = data_json.get("respondent") or {}
+    addr = resp.get("address") or {}
     
     case_details.respondent.first_name = resp.get("first_name", "")
     case_details.respondent.last_name = resp.get("last_name", "")
@@ -62,25 +147,28 @@ def json_to_case_details(data_json, case_details):
     case_details.respondent.address_town_or_city = addr.get("town", "")
     case_details.respondent.address_postcode = addr.get("postcode", "")
     case_details.respondent.gender=detect_gender(case_details.respondent.first_name)
+    case_details.respondent.set_pronouns()
 
     # 5. Children
-
+    case_details.children = []
     for child_json in data_json.get("children", []):
-        full_name = child_json.get("name", "").strip()
-        dob_string = child_json.get("dob", "").strip()
+        full_name = (child_json.get("name") or "").strip()
+        dob_string = (child_json.get("dob") or "").strip()
         try:
             dob_object = datetime.strptime(dob_string, "%d/%m/%Y").date()
-        except:
+        except ValueError:
             dob_object = None
 
         parts = full_name.split()
         first = parts[0] if parts else ""
         last = parts[-1] if len(parts) > 1 else ""
 
+        # The extractor doesn't give the child's gender, so guess it from the first name
+        child_gender = {"Male": "boy", "Female": "girl"}.get(detect_gender(first), "")
         child = Child(
         first_name=first,
         last_name=last,
-        gender="",          # extractor doesn’t provide gender
+        gender=child_gender,
         dob=dob_object
     )
 
@@ -105,29 +193,6 @@ def json_to_case_details(data_json, case_details):
 
 def extract_date_from_pdf():
     pass
-    
-#SECTION ONE APPLICANT
-
-page_no = 11
-path=r"C:/Users/sgcam/Projects/pdf_Extract/Tudor v Tudor.pdf"
-
-with pdfplumber.open(path) as pdf:
-    if page_no < len(pdf.pages):
-        page = pdf.pages[page_no]   
-        tables=page.extract_tables()
-        child_table=tables[0]
-        
-        if tables:
-            child_table=tables[0]
-            headers=child_table[0] 
-            rows=child_table[1:]
-            children =[]
-
-
-#SECTION TWO RESPONDENT
-
-
-#SECTION THREE CHILDREN
 
 
 

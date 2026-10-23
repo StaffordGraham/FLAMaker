@@ -38,6 +38,8 @@ from classes.Child import Child
 from pathlib import Path
 import pickle
 import pyperclip
+from create_order import write_order
+
 
 BASE_DIR = Path(__file__).resolve().parent  # project root
 DATA_DIR = BASE_DIR / "data"
@@ -214,12 +216,20 @@ class Start(BasePage,tk.Frame):
 # Define radio buttons
         self.radio1 = tk.Radiobutton(self.input_frame, text="Standard Orders", variable=self.var, value="Standard Orders", command=self.on_select)
         self.radio2 = tk.Radiobutton(self.input_frame, text="Full Mostyn", variable=self.var, value="Full Mostyn", command=self.on_select)
+        self.status_label=tk.Label(self,text="",bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR)
+        self.progress =ttk.Progressbar(self,mode="indeterminate")
+        
+        
 
 # Use grid instead of pack
         self.radio1.grid(row=self.row_no, column=0, sticky=tk.W, padx=10, pady=5)
         self.row_no+=1
         self.radio2.grid(row=self.row_no, column=0, sticky=tk.W, padx=10, pady=5)
         self.row_no+=1
+        self.status_label.grid(row=self.row_no,column=0,pady=(10,0),sticky='w')
+        self.row_no+=1
+
+        
 
 #NEXT AND BACK BUTTON Frame
 
@@ -242,6 +252,8 @@ class Start(BasePage,tk.Frame):
              for page in pdf.pages:
                  text += page.extract_text()
         return text.strip()
+    
+    
     
         
         
@@ -331,6 +343,10 @@ class Start(BasePage,tk.Frame):
     def new_case(self):
         if self.case_details:
             self.case_details.reset()
+            # Put every page's tick boxes and choices back to their defaults as well
+            for frame in self.controller.frames.values():
+                if hasattr(frame,'clear'):
+                    frame.clear()
             self.front_step()
             
         
@@ -346,18 +362,30 @@ class Start(BasePage,tk.Frame):
             
             
     def file_open(self):
+        
         pdfPath =self.open_file_dialog()
-        p='q'
+        if not pdfPath:
+            return
+        
+        self.status_label.config(text="Extracting data from FL401..please wait.")
+        self.progress.grid(row=self.row_no,column=0,pady=10,sticky="w")
+        self.progress.start()
+        self.update_idletasks()
         data_json=extract_from_fl401_by_field(pdfPath)
         if not data_json:
             data_json=extract_by_ocr(pdfPath)
         cd= json_to_case_details(data_json,case_details)
-        print("Respondent first name: ",case_details.respondent.first_name)
-        print(" Respondent last name:",case_details.respondent.last_name)
-        print("Respondent building and street",case_details.respondent.address_building_and_street)
-        print("Respondent address second line",case_details.respondent.address_second_line)  
-        print("Respondent address town or city",case_details.respondent.address_town_or_city)
-        print("Respondent postcode ",case_details.respondent.address_postcode)
+        self.progress.stop()
+        self.progress.grid_forget()
+        self.status_label.config(text="Extraction Complete")
+        write_order(case_details)
+        
+        # print("Respondent first name: ",case_details.respondent.first_name)
+        # print(" Respondent last name:",case_details.respondent.last_name)
+        # print("Respondent building and street",case_details.respondent.address_building_and_street)
+        # print("Respondent address second line",case_details.respondent.address_second_line)  
+        # print("Respondent address town or city",case_details.respondent.address_town_or_city)
+        # print("Respondent postcode ",case_details.respondent.address_postcode)
             
         
         
@@ -575,12 +603,9 @@ class Case (BasePage,tk.Frame):
             self.entry_judge_name.insert(0,self.case_details.judge_name)            
        
             
+        self.entry_case_number.delete(0,'end')
         if self.case_details.case_number:
-            self.entry_case_number.delete(0,'end')
             self.entry_case_number.insert(0,self.case_details.case_number)
-        else:
-            self.entry_case_number.delete(0,'end')
-            self.entry_case_number.insert(0,"ME 25 0924")
         
     def update_bottom_frame_width(self,event=None):
        self.bottom_frame.place_configure(width=self.winfo_width())
@@ -597,10 +622,9 @@ class Case (BasePage,tk.Frame):
         self.case_details.judge_name=self.entry_judge_name.get()
         self.case_details.relationship=self.relat_combo.get()
         applications_string=self.combo_application.get()
-        if self.abbrev_applications[1] in applications_string:
-            self.case_details.molestation_order=True
-        if self.abbrev_applications[0] in applications_string:
-            self.case_details.occupation_order=True
+        # Set both flags every time so changing the application switches the other one off
+        self.case_details.molestation_order=self.abbrev_applications[1] in applications_string
+        self.case_details.occupation_order=self.abbrev_applications[0] in applications_string
        
         
         
@@ -854,12 +878,15 @@ class Applicant(BasePage,tk.Frame):
         postcode_label.grid(row=self.row_no,column=0,padx=10,pady=10,sticky='w')
         self.postcode_entry.grid(row=self.row_no,column=1,padx=10,pady=10,sticky='w')
         self.check_var=tk.IntVar()
+        self.row_no+=1
 
-       
-       
-       
-      
-        
+        #CONFIDENTIAL ADDRESS (FL401 q2.4 / form C8)
+        self.secret_var=tk.BooleanVar()
+        secret_check=tk.Checkbutton(self.input_frame,text="Address confidential - do not disclose to Respondent",
+                                    variable=self.secret_var)
+        secret_check.config(bg=BACKGROUND_COLOUR,fg=FOREGROUND_COLOUR,font=("Helvetica",12))
+        secret_check.grid(row=self.row_no,column=0,columnspan=2,padx=10,pady=10,sticky='w')
+
          #THE FRAME FOR THE NEXT AND BACK BUTTONS WITH RELATED FUNCTION -CHILDREN
         
         self.bottom_frame=tk.Frame(self,bg=BACKGROUND_COLOUR,height=50)
@@ -878,11 +905,15 @@ class Applicant(BasePage,tk.Frame):
     def on_show(self):
         if self.case_details.applicant.title=='':
             self.combo_title.set('Ms')
-            self.gender_combo.set('Female')
         else:
             self.combo_title.set(self.case_details.applicant.title)
+        # Use the gender detected from the PDF (or entered before) rather than always the default
+        if self.case_details.applicant.gender in ('Male','Female'):
             self.gender_combo.set(self.case_details.applicant.gender)
-            
+        else:
+            self.gender_combo.set('Female')
+        self.secret_var.set(self.case_details.app_address_secret)
+
         self.first_name_entry.delete(0,'end')
         self.first_name_entry.insert(0,self.case_details.applicant.first_name)
         self.surname_entry.delete(0,'end')
@@ -953,7 +984,8 @@ class Applicant(BasePage,tk.Frame):
         self.case_details.applicant.address_second_line=self.add2_entry.get()
         self.case_details.applicant.address_town_or_city=self.town_entry.get()
         self.case_details.applicant.address_postcode=self.postcode_entry.get()
-        
+        self.case_details.app_address_secret=self.secret_var.get()
+
         self.case_details.applicant.set_pronouns()
         self.case_details.applicant.set_full_name()
         self.case_details.applicant.set_family_home()
@@ -1126,10 +1158,13 @@ class Respondent(BasePage,tk.Frame):
     def on_show(self):
         if self.case_details.respondent.title=="":
             self.combo_title.set('Mr')
-            self.gender_combo.set('Male')
         else:
             self.combo_title.set(self.case_details.respondent.title)
+        # Use the gender detected from the PDF (or entered before) rather than always the default
+        if self.case_details.respondent.gender in ('Male','Female'):
             self.gender_combo.set(self.case_details.respondent.gender)
+        else:
+            self.gender_combo.set('Male')
         
         self.first_name_entry.delete(0,'end')
         if self.case_details.respondent.first_name:
@@ -1693,14 +1728,18 @@ class  Children(BasePage,tk.Frame):
         
     #FUNCTIONS CHILDREN
     def detect_sex(self,event):
-        first_name=self.child_widgets['name1'].get().strip().title()
+        # Work on the row whose name was just typed, not always the newest row
+        row=next((w for w in self.child_widgets_list if w['name1'] is event.widget),None)
+        if row is None:
+            return
+        first_name=row['name1'].get().strip().title()
         if first_name in boy_names:
-            self.child_widgets['gender'].set('Boy')
-         
+            row['gender'].set('boy')
+
         elif first_name in girl_names:
-             self.child_widgets['gender'].set('Girl')
+             row['gender'].set('girl')
         else:
-            self.child_widgets['gender'].set("")
+            row['gender'].set("")
         
         
     def latest_dob(self):
@@ -1720,31 +1759,8 @@ class  Children(BasePage,tk.Frame):
                 
     
     def fill_widgets(self):
+        pass
         
-            widget_values=[]
-            the_surname=self.case_details.respondent.last_name
-            child1=('Arthur',the_surname,'boy','01','01','2021')
-            widget_values.append(child1)
-            child2=('Belinda',the_surname,'girl','02','02','2022')
-            widget_values.append(child2)
-            child3=('Charlie',the_surname,'boy','03','03','2020')
-            widget_values.append(child3)
-            x = len(widget_values)
-            y=len(self.child_widgets_list)
-            for index,widgets in enumerate(self.child_widgets_list):
-                i=index
-            #widgets['label'].
-                widgets['name1'].delete(0,tk.END)
-                widgets['name1'].insert(0,widget_values[i][0])
-                widgets['name2'].delete(0,tk.END)
-                widgets['name2'].insert(0,widget_values[i][1])
-                widgets['gender'].set(widget_values[i][2])
-                bday=widget_values[i][3]
-                bmonth=widget_values[i][4]
-                byear=widget_values[i][5]
-                boithdoy=f"{bday}/{bmonth}/{byear}"
-            
-                widgets['birthday'].set_date(boithdoy)
            
             
     def show_the_kids(self,child):
@@ -1753,10 +1769,8 @@ class  Children(BasePage,tk.Frame):
         ten_years_ago = now.replace(year=now.year - 10)
         now=ten_years_ago
         
-        namen=child.first_name
-        child_number=1
-        string_child_number = str(child_number)
-        child_text_id=f"Child {string_child_number}"
+        self.child_count+=1
+        child_text_id=f"Child {self.child_count}"
         
         child_widget_dict={
                         'label':tk.Label(self.child_input_frame,
@@ -1785,10 +1799,14 @@ class  Children(BasePage,tk.Frame):
         child_widget_dict['name1'].insert(0,child.first_name)
         child_widget_dict['name2'].insert(0,child.last_name)
         child_widget_dict['gender'].set(child.gender)
-        
-        child_widget_dict['birthday'].set_date(child.birthday_object)
 
-        
+        if child.birthday_object:
+            child_widget_dict['birthday'].set_date(child.birthday_object)
+        child_widget_dict['name1'].bind('<FocusOut>',self.detect_sex)
+
+        # Only the last row shows the "Another Child" button
+        if self.child_widgets_list:
+            self.child_widgets_list[-1]['another_child'].grid_forget()
         self.child_widgets_list.append(child_widget_dict)
         child_widget_dict['label'].grid(row=self.row_no,column=0, padx=(10,10),pady=10,sticky='w')
         child_widget_dict['name1'].grid (row=self.row_no,column=1, padx=(10,10),pady=10,sticky='w')  
@@ -1811,21 +1829,27 @@ class  Children(BasePage,tk.Frame):
        
         
         if self.case_details.children:
-            a=len(self.case_details.children)
-            self.case_details.children = sorted(self.case_details.children, key=lambda child: child.birthday_object)
+            self.child_count=0
+            # Children whose date of birth couldn't be read go last
+            self.case_details.children = sorted(self.case_details.children,
+                key=lambda child: (child.birthday_object is None,
+                                   child.birthday_object.toordinal() if child.birthday_object else 0))
             for child in self.case_details.children:
                 self.show_the_kids(child)
                 self.row_no+=1
-                
+
             self.case_details.children.clear()
+
+        # Rows are destroyed when leaving the page, so always offer an empty row to type into
+        if not self.child_widgets_list:
+            self.child_count=0
+            self.another_kid()
             
         if self.case_details:
             if len(self.case_details.children)==0:
-                if self.case_details.relationship=="Marriage":
-                    t =self.case_details.respondent.last_name
-                else: t= self.case_details.applicant.last_name
-                if t!='':
-                    self.child_widgets['name2'].insert(0,t)
+                pass
+              
+               
             
         
         
@@ -1850,20 +1874,21 @@ class  Children(BasePage,tk.Frame):
     def update(self):
         #case_details.children.clear()
         for widgets in self.child_widgets_list:
-            name1=widgets['name1'].get()
-            name2=widgets['name2'].get()
+            name1=widgets['name1'].get().strip()
+            name2=widgets['name2'].get().strip()
+            # Skip rows where no name was entered so blank rows don't become children
+            if not name1 and not name2:
+                continue
             gender=widgets['gender'].get()
             birthday=widgets['birthday'].get()
             birthday_date_object= datetime.strptime(birthday, '%d/%m/%Y')
-        
+
             #formatted_birthday=birthday_date_object.strftime('%d %b %Y')
-            
-           
+
+
             child=Child(name1,name2,gender,birthday_date_object)
-            
+
             self.case_details.children.append(child)
-            for child in self.case_details.children:
-                child.sentence=f"{child.first_name} {child.last_name}, a {child.gender} born on {birthday}." 
             
         for widget_dict in self.child_widgets_list:
             for widget in widget_dict.values():
@@ -1879,9 +1904,16 @@ class  Children(BasePage,tk.Frame):
        self.bottom_frame.place_configure(width=self.winfo_width())
         
         
+    def clear(self):
+        for widget_dict in self.child_widgets_list:
+            for widget in widget_dict.values():
+                widget.destroy()
+        self.child_widgets_list.clear()
+        self.child_count=0
+
     def another_kid(self):
         youngest_birthday=self.latest_dob()
-        set_year = youngest_birthday.year
+        set_year = youngest_birthday.year if youngest_birthday else datetime.now().year-10
         
 
         if self.child_widgets_list:
@@ -2073,9 +2105,13 @@ class Recitals(BasePage,tk.Frame):
             
     def another_witness(self):
         pass
-        
+
+    def clear(self):
+        for var in self.checkbox_vars:
+            var.set(0)
+
     def on_show(self):
-        
+
         self.wit_name1_text.delete(0,tk.END)
         self.wit_name1_text.insert(0,self.case_details.applicant.full_name)
     
@@ -2120,49 +2156,48 @@ class Recitals(BasePage,tk.Frame):
     
         
         
-        artic=self.article(app_type)
-        the_notice = self.case_details.notice_string
-        the_notice=the_notice.lower()
-        
-        if type(self.case_details.application) is not int:
-            app_type=self.case_details.application
-            app_type.lower()
-            
-       
+        # The application type comes from the Yes/No flags above; the old override with
+        # case_details.application left this blank ("This is  made against...") for manual entry
+        app_type=app_type.strip()
+        reason=reason.strip()
+        reason_clause=f" {reason}" if reason else ""
+        hearing_date=self.case_details.hearing_date_object
+        hearing_date_text=f"{hearing_date.day} {hearing_date.strftime('%B %Y')}"
+
         recitals_dict={
             "Standard":(
                 f"This is {app_type} made against the Respondent "
-            f"{self.case_details.respondent.first_name}  {self.case_details.respondent.last_name} on "
-            f"{self.case_details.hearing_date_object.strftime('%d %B %Y').replace(' 0', ' ') if self.case_details.hearing_date_object.day < 10 else self.case_details.hearing_date_object.strftime('%d %B %Y')} "
+            f"{self.case_details.respondent.first_name} {self.case_details.respondent.last_name} on "
+            f"{hearing_date_text} "
             f"by {self.case_details.judge_rank} {self.case_details.judge_name} "
-            f"on the application of the Appplicant {self.case_details.applicant.first_name}  {self.case_details.applicant.last_name}"
+            f"on the application of the Applicant {self.case_details.applicant.first_name} {self.case_details.applicant.last_name}."
             ),
-            
+
              "Legal Aid":("The court records the following information for the purposes of the Family Advocacy Scheme (FAS):\n"
 "\ta.	the advocates met for pre-hearing discussions between [time] and [time];\n"
-"\tb.	the hearing started at [start time] and ended at [end time] ; \n"
-"\tc.	the court allowed [time} thereafter for preparation and agreement of the order between [time] and [time];\n"
-"\td.	{advocate_name} is entitled to a bolt on because {advocate_nominative_pronoun} is representing a client who is facing allegations that they have caused significant harm to a child and these are a live issue in proceedings;\n"
-"\te.	all advocates are entitled to a bolt on because an independent expert witness was cross-examined and substantially challenged by a party at the hearing; and"
-"\tf.	the advocates bundle page count is [number].),"
+"\tb.	the hearing started at [start time] and ended at [end time];\n"
+"\tc.	the court allowed [time] thereafter for preparation and agreement of the order between [time] and [time];\n"
+"\td.	[advocate name] is entitled to a bolt on because [he/she] is representing a client who is facing allegations that they have caused significant harm to a child and these are a live issue in proceedings;\n"
+"\te.	all advocates are entitled to a bolt on because an independent expert witness was cross-examined and substantially challenged by a party at the hearing; and\n"
+"\tf.	the advocates bundle page count is [number]."
              ),
-            "Remote Hearing":"",
-            "Covid":("The court determined that in the exceptional circumstances of the current national public health emergency" 
+            "Remote Hearing":"This hearing took place remotely by [video link / telephone].",
+            "Covid":("The court determined that in the exceptional circumstances of the current national public health emergency "
                      "this case is suitable for hearing remotely (“remote hearing”) by means of [insert]."),
-            "Prohibition of Cross-Examination":"Some random placeholder text",
-            "Short Notice":(f"This order was made at a hearing {the_notice.lower()} to the respondent."
-            f"The reason why the order was made {the_notice.lower()} to the respondent was {self.case_details.reasons}."
-            f"The respondent has the right to apply to the court to vary or discharge the order" 
-            f" see paragraph  below."),
-            "On Notice":"This order was made at a hearing on notice to the respondent.",
-            "Without Notice":f"This order was made at a hearing without notice to the Respondent {reason}."
+            "Prohibition of Cross-Examination":("The prohibition on cross-examination in person in Part 4B of the "
+                     "Matrimonial and Family Proceedings Act 1984 applies in these proceedings because [insert reason]."),
+            "Short Notice":f"This order was made at a hearing on short notice to the Respondent{reason_clause}. "
                               f"The Respondent has the right to apply to the court to vary or discharge this order. "
                               f"(see paragraph below)",
-            
+            "On Notice":"This order was made at a hearing on notice to the respondent.",
+            "Without Notice":f"This order was made at a hearing without notice to the Respondent{reason_clause}. "
+                              f"The Respondent has the right to apply to the court to vary or discharge this order. "
+                              f"(see paragraph below)",
+
         }
         recitals_list=["Standard"]
         if self.case_details.notice =='Short Notice':
-                recitals_list.append("On Notice")
+                recitals_list.append("Short Notice")
         elif self.case_details.notice=="Without Notice":
             recitals_list.append("Without Notice")
         else:
@@ -2176,8 +2211,7 @@ class Recitals(BasePage,tk.Frame):
             if var.get()==1:
                 recitals_list.append(text)
                 
-        for key in recitals_list:
-            self.case_details.recitals.append(recitals_dict[key])
+        self.case_details.recitals=[recitals_dict[key] for key in recitals_list]
         
         tempvar = self.case_details.notice
             
@@ -2287,6 +2321,10 @@ class Undertakings(BasePage,tk.Frame):
         
     
 #UNDERTAKINGS FUNCTIONS
+    def clear(self):
+        for var in self.checkbox_vars:
+            var.set(0)
+
     def update_bottom_frame_width(self,event=None):
        self.bottom_frame.place_configure(width=self.winfo_width())
        
@@ -2324,11 +2362,8 @@ class Undertakings(BasePage,tk.Frame):
             "a. file a witness s\tatement substantially in the terms of the draft witness statement produced to the court."       
             
         }
-        for text,var in zip(self.checkbox_texts,self.checkbox_vars):
-           
-            if var.get()==1:
-                txt_para=Undertakings_dict [text]
-                self.case_details.undertakings.append(txt_para)
+        self.case_details.undertakings=[Undertakings_dict[text]
+            for text,var in zip(self.checkbox_texts,self.checkbox_vars) if var.get()==1]
                 
        
             
@@ -2524,13 +2559,17 @@ class OccOrders(BasePage):
         self.bottom_frame.grid_columnconfigure(1,weight=1)
         
     #ORDERS FUNCTIONS
-        
+    def clear(self):
+        for var in self.checkbox_col1_vars+self.checkbox_col2_vars:
+            var.set(0)
+
     def on_show(self):
         pass
     def update(self):
-        for i, var in enumerate(self.checkbox_col1_vars):
-            if var.get() == 1:  # If the checkbox is checked
-                self.case_details.order_choices.append(self.checkbox_texts_col1[i])
+        # Replace this page's choices in case_details.order_choices, keeping the other pages' choices
+        selected=[text for text,var in zip(self.checkbox_texts_col1,self.checkbox_col1_vars) if var.get()==1]
+        others=[c for c in self.case_details.order_choices if c not in self.checkbox_texts_col1]
+        self.case_details.order_choices=others+selected
                 
       
         
@@ -2641,14 +2680,19 @@ class NonMols(BasePage):
         self.bottom_frame.grid_columnconfigure(1,weight=1)
         
     #NON MOLS FUNCTIONS
-        
+    def clear(self):
+        # Back to the standard ticks set up in __init__
+        for text,var in zip(self.checkbox_texts_col1,self.checkbox_col1_vars):
+            var.set(1 if text in self.auto_checkbox else 0)
+
     def on_show(self):
         pass
     def update(self,controller):
-        #The following puts the checkbox text of ticked checkboxes in the list case_details.order_choices
-        for i, var in enumerate(self.checkbox_col1_vars):
-            if var.get() == 1:  # If the checkbox is checked
-                 self.case_details.order_choices.append(self.checkbox_texts_col1[i])
+        #The following puts the checkbox text of ticked checkboxes in the list case_details.order_choices,
+        #replacing this page's earlier choices but keeping the other pages' choices
+        selected=[text for text,var in zip(self.checkbox_texts_col1,self.checkbox_col1_vars) if var.get()==1]
+        others=[c for c in self.case_details.order_choices if c not in self.checkbox_texts_col1]
+        self.case_details.order_choices=others+selected
         
         
         
@@ -2757,14 +2801,15 @@ class Directions(BasePage,tk.Frame):
         self.bottom_frame.grid_columnconfigure(1,weight=1)
         
     #DIRECTIONS FUNCTIONS
-        
+    def clear(self):
+        for var in self.checkbox_col1_vars:
+            var.set(0)
+
     def on_show(self):
         pass
     def update(self,controller):
         #The following puts the checkbox text of ticked checkboxes in the list case_details.order_choices
-        for i, var in enumerate(self.checkbox_col1_vars):
-            if var.get() == 1:  # If the checkbox is checked
-                 self.case_details.directions.append(self.checkbox_texts_col1[i])
+        self.case_details.directions=[text for text,var in zip(self.checkbox_texts_col1,self.checkbox_col1_vars) if var.get()==1]
                  
       
 
@@ -2848,18 +2893,21 @@ class Duration(BasePage,tk.Frame):
         
     
 #DURATION FUNCTIONS
+    def clear(self):
+        # Empty combos make on_show put the defaults back
+        self.comb_effect.set('')
+        self.combo_or_last.set('')
+
     def update_bottom_frame_width(self,event=None):
        self.bottom_frame.place_configure(width=self.winfo_width())
        
     def on_show(self):
-        self.comb_effect.current(0)
-        self.combo_or_last.current(3)
-        
-    def update(self):
-        pass
-    
-        
-    
+        # Only set defaults the first time, so the user's choices survive Back/Next
+        if not self.comb_effect.get():
+            self.comb_effect.current(0)
+        if not self.combo_or_last.get():
+            self.combo_or_last.current(3)
+
     def last_action(self):
         self.update()
         self.controller.last_page()
@@ -2869,11 +2917,10 @@ class Duration(BasePage,tk.Frame):
             self.update()    
             self.controller.next_page()
             
-    def add_time(self,months):
+    def add_time(self,start,months):
         from dateutil.relativedelta import relativedelta
-        today=datetime.now()
         mon = int(months)
-        later = today + relativedelta(months=mon) 
+        later = start + relativedelta(months=mon)
         return later
     
     
@@ -2903,21 +2950,23 @@ class Duration(BasePage,tk.Frame):
         relat=self.case_details.relationship
         tody=date.today()
         leave_date = tody + timedelta(days=7)
-        mnths=self.combo_or_last.get()
-        if isinstance(mnths,int)==False:
+        mnths=self.combo_or_last.get().strip()
+        if not mnths.isdigit():
             mnths='6'
-        
-            
-            
-            
-            tempdate=self.add_time(mnths)
-            form_ord_last=self.format_date(tempdate)
-            self.case_details.order_last=form_ord_last
-        
-        tempord1=f"This order shall be effective against the respondent {resp_name} once it is personally served on {self.case_details.respondent.accusative}."
-        self.case_details.orders.append(tempord1)
-        tempord2 =f"This order shall last until {self.case_details.order_last} unless it is set aside or varied before then by an order of the court."   
-        self.case_details.orders.append(tempord2)
+        # The order runs from the hearing date, not from the day the order is typed up
+        start=self.case_details.hearing_date_object or date.today()
+        tempdate=self.add_time(start,mnths)
+        self.case_details.order_last=self.format_date(tempdate)
+        self.case_details.effective=self.comb_effect.get()
+
+        if self.case_details.effective=='made aware':
+            tempord1=(f"This order shall be effective against the Respondent {resp_name} once "
+                      f"{self.case_details.respondent.nominative} is made aware of its terms, whether by personal service or otherwise.")
+        else:
+            tempord1=f"This order shall be effective against the Respondent {resp_name} once it is personally served on {self.case_details.respondent.accusative}."
+        tempord2 =f"This order shall last until {self.case_details.order_last} unless it is set aside or varied before then by an order of the court."
+        # Assign rather than append so going Back and Next again doesn't duplicate these paragraphs
+        self.case_details.duration_orders=[tempord1,tempord2]
         
        
         
@@ -2992,20 +3041,24 @@ class Actions(BasePage,tk.Frame):
         
 
     def on_show(self):
-        pass
-    
+        self.consent_var.set(self.case_details.consent_order)
+
+    def clear(self):
+        self.consent_var.set(False)
+
 
     def update(self):
-        pass
-    
+        self.case_details.consent_order=self.consent_var.get()
+
     def front_step(self):
         pass
 
     def back_step(self):
-        self.update(self)
+        self.update()
         self.controller.last_page()
-        
+
     def produce_order(self):
+        self.update()
         self.case_details.name_file()
         write_order(case_details=self.case_details)
         

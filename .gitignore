@@ -1,0 +1,8 @@
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Generated orders and case files (confidential - never commit)
+/*.docx
+*.ord
+~$*

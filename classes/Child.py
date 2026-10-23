@@ -6,14 +6,14 @@ class Child:
         self.last_name = last_name
         self.gender = gender
 
-        # Store the date object
+        # Store the date object (None if the date of birth couldn't be read)
         self.birthday_object = dob
 
         # Store a formatted string version
-        self.dob = dob.strftime("%d/%m/%Y")
+        self.dob = dob.strftime("%d/%m/%Y") if dob else "[date of birth]"
 
         # Optional: compute age
-        self.age = self.calculate_age(dob)
+        self.age = self.calculate_age(dob) if dob else None
 
         # Useful for narrative sentences
         self.sentence = f"{self.first_name} {self.last_name}, a {self.gender} born on {self.dob}."

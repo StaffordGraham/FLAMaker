@@ -87,25 +87,25 @@ def write_order(case_details):
             else:
                 label_children="The full name of the child"
                 label_date="Date of Birth"
-        child_table=doc.add_table(rows=kidno+1,cols=3)
-        child_table.columns[0].width=Cm(20)
-        child_table.columns[1].width=Cm(3)
-        child_table.columns[2].width=Cm(3)
-       
-        cell_00=child_table.cell(0,0)
-        cell_00.text=label_children
-        cell_01=child_table.cell(0,1)
-        cell_01.text="Boy or Girl"
-        cell_02=child_table.cell(0,2)
-        cell_02.text=label_date
+            child_table=doc.add_table(rows=kidno+1,cols=3)
+            child_table.columns[0].width=Cm(20)
+            child_table.columns[1].width=Cm(3)
+            child_table.columns[2].width=Cm(3)
+
+            cell_00=child_table.cell(0,0)
+            cell_00.text=label_children
+            cell_01=child_table.cell(0,1)
+            cell_01.text="Boy or Girl"
+            cell_02=child_table.cell(0,2)
+            cell_02.text=label_date
         
         #ADD CHILDREN INFO
         
-        for i, child in enumerate(case_details.children, start=1):  # start=1 to fill rows below the header
-            child_full_name =child.first_name + " "+child.last_name
-            child_table.cell(i, 0).text = child_full_name  # Name
-            child_table.cell(i, 1).text = child.gender # Gender
-            child_table.cell(i, 2).text = child.dob  # Date of Birth (convert to string if necessary)
+            for i, child in enumerate(case_details.children, start=1):  # start=1 to fill rows below the header
+                child_full_name =child.first_name + " "+child.last_name
+                child_table.cell(i, 0).text = child_full_name  # Name
+                child_table.cell(i, 1).text = child.gender # Gender
+                child_table.cell(i, 2).text = child.dob  # Date of Birth (convert to string if necessary)
         
         doc.add_paragraph()
         
@@ -198,39 +198,44 @@ def write_order(case_details):
         run.bold=True
         
         numb_children = len(case_details.children)
-        
-        
-        
-        if numb_children>1:
-            chilo="The “relevant children” within the meaning of Family Law Act 1996 are:"
-            paragraph_text=chilo
-            
-            starting_char='a'
-            
-            for index, child in enumerate(case_details.children):
-                    sentence=child.sentence
-                    prefix =chr(ord(starting_char)+index)
-                    paragraph_text+=f"\n  {prefix}\t{sentence}\n"
-                    
-            doc.add_paragraph(paragraph_text,style='ListNumber')
+        if numb_children==0:
+            pass
+        elif numb_children==1:
+            child = case_details.children[0]
+            chilo=(f"The “relevant child” within the meaning of the Family Law Act 1996 "
+                   f"is: {child.sentence}"
+            )
+            doc.add_paragraph(chilo,style='ListNumber')
             
         else:
-            chilo=f"The relevant child within the meaning of the Family Law Act 1995 is {case_details.children[0].sentence}"
-            doc.add_paragraph(chilo,style='ListNumber')
-
+            paragraph_text=(
+                "The relevant children within the meaning of the Family Law Act 1996 are: "
+            )
+            starting_char='a'
+            for index, child in enumerate(case_details.children):
+                prefix=chr(ord(starting_char)+index)
+                paragraph_text+=f"\n{prefix}\t{child.sentence}"
+            doc.add_paragraph(paragraph_text,style='ListNumber')
+            
+        
+        
+        
+            
         
         
             
             #DEFINITIONS FAMILY HOME
             
-        fam_home_stringbuilder =[]
-        fam_home_stringbuilder.append('The "family home" is the property at')
-        fam_home_stringbuilder.append(case_details.applicant.address_building_and_street)
-        fam_home_stringbuilder.append(case_details.applicant.address_second_line)
-        fam_home_stringbuilder.append(case_details.applicant.address_town_or_city)
-        fam_home_stringbuilder.append(case_details.applicant.address_postcode)
-        family_home_def=' '.join(fam_home_stringbuilder)
-        doc.add_paragraph(family_home_def  ,style='ListNumber')
+        # Leave the definition out when the applicant's address must not be disclosed to the respondent
+        if not case_details.app_address_secret:
+            fam_home_stringbuilder =[]
+            fam_home_stringbuilder.append('The "family home" is the property at')
+            fam_home_stringbuilder.append(case_details.applicant.address_building_and_street)
+            fam_home_stringbuilder.append(case_details.applicant.address_second_line)
+            fam_home_stringbuilder.append(case_details.applicant.address_town_or_city)
+            fam_home_stringbuilder.append(case_details.applicant.address_postcode)
+            family_home_def=' '.join(part for part in fam_home_stringbuilder if part)
+            doc.add_paragraph(family_home_def  ,style='ListNumber')
             
         #RECITALS
 
@@ -269,12 +274,13 @@ def write_order(case_details):
         mat_home2=case_details.applicant.address_second_line
         mat_home3=case_details.applicant.address_town_or_city
         mat_home4=case_details.applicant.address_postcode
-        mat_home=mat_home1+", "+mat_home2+", "+mat_home3+", "+mat_home4
+        mat_home=", ".join(part for part in (mat_home1,mat_home2,mat_home3,mat_home4) if part)
+        if case_details.app_address_secret:
+            mat_home="the property where the Applicant lives (the address of which is not to be disclosed)"
         relat=case_details.relationship
         if len(case_details.children)==1:
             kidno="child"
-            
-        if len (case_details.children)>1:
+        else:
             kidno="children"
             
         school_address= ""
@@ -349,15 +355,15 @@ def write_order(case_details):
         ord_dict[key]=value
         
         key="Not damage property"
-        value=(f"The Respondent, {resp_name}, must not damage, attempt to damage or threaten to damage"
-               f"any property owned by or in the possession or controlof the Applicant {app_name},"
-               f"and must not instruct,encourage or in any way suggest that any other person should do so."
+        value=(f"The Respondent, {resp_name}, must not damage, attempt to damage or threaten to damage "
+               f"any property owned by or in the possession or control of the Applicant {app_name}, "
+               f"and must not instruct, encourage or in any way suggest that any other person should do so."
         )
         ord_dict[key]=value
-        
+
         key="Not damage family home"
-        value =(f"The Respondent {resp_name}, must not damage, attempt to damage or threaten to damage"
-                f"the property or contents of {mat_home} and must not instruct, encourage or in any way suggest"
+        value =(f"The Respondent {resp_name}, must not damage, attempt to damage or threaten to damage "
+                f"the property or contents of {mat_home} and must not instruct, encourage or in any way suggest "
                 f"that any other person should do so."
               
         )
@@ -366,27 +372,27 @@ def write_order(case_details):
         key ="Not Enter family home"
 
         value=(f"The Respondent {resp_name}, must not go to, enter or attempt to enter {mat_home} or "
-               f" any property where {case_details.respondent.nominative} believes the Applicant {app_name}"
+               f"any property where {case_details.respondent.nominative} believes the Applicant {app_name}"
                f" to be living."
         )
         
         ord_dict[key]=value
         key="Non mol zonal"
-        ord_dict[key]=value
-        value=(f" The Respondent {resp_name} must not approach within 100 meters of the {mat_home}"
+        value=(f"The Respondent {resp_name} must not approach within 100 metres of {mat_home}."
         )
-        
+        ord_dict[key]=value
+
         key="Not intimidate, harass or pester children"
 
-        value =(f"The Respondent {resp_name}, must not use or threaten violence against the relevant {kidno} "
-                f" and must not instruct, encourage or in any way suggest that any other person should do so."
+        value =(f"The Respondent {resp_name}, must not intimidate, harass or pester the relevant {kidno} "
+                f"and must not instruct, encourage or in any way suggest that any other person should do so."
         )
         ord_dict[key]=value
-        
+
         key="Not communicate with children"
 
-        value=(f"The Respondent {resp_name}, must not telephone, text,email or otherwise contact or attempt  "
-               f"the relevant {kidno} including via social networking websites or other forms of electronic"
+        value=(f"The Respondent {resp_name}, must not telephone, text, email or otherwise contact or attempt to contact "
+               f"the relevant {kidno}, including via social networking websites or other forms of electronic"
                f" messaging."
         )
         ord_dict[key]=value
@@ -409,7 +415,7 @@ def write_order(case_details):
         key="Mat Home Rights Survive Divorce"
         value=(f"The court declares that the {app_name}'s "
         f"home rights in {mat_home} shall not end when the Respondent {resp_name}"
-        f" dies or their {relat.lower()} is dissolved and shall continue until "
+        f" dies or their marriage is dissolved and shall continue until "
         f"the determination of the Applicant's financial provision claims or a further order is made."
         )
         ord_dict[key]=value
@@ -456,9 +462,19 @@ def write_order(case_details):
         )
         ord_dict[key]=value
         
-        for key in case_details.order_choices:
-            case_details.orders.append(ord_dict[key])
-                
+        # Rebuild the orders from scratch each time, in the order they are defined above,
+        # so producing the order twice does not duplicate paragraphs
+        orders=[ord_dict[key] for key in ord_dict if key in case_details.order_choices]
+        orders.extend(case_details.duration_orders)
+        case_details.orders=orders
+
+        occupation_keys=list(ord_dict)[list(ord_dict).index("Declaration of Mat Home Rights"):]
+        if case_details.app_address_secret and any(key in case_details.order_choices for key in occupation_keys):
+            messagebox.showwarning("Confidential Address",
+                "The Applicant's address is marked as confidential, but occupation orders were chosen.\n\n"
+                "These orders now refer to the property without naming it. "
+                "Check the order before it is sealed or served.")
+
         oph=doc.add_paragraph()
         ord_head_run=oph.add_run(orders_para_head)
         ord_head_run.bold=True

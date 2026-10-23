@@ -31,10 +31,11 @@ class CaseDetails:
             self.judge_name = "Jane Campbell"
             self.judge_rank="Deputy District Judge"
             self.file_name=""
-            self.judge_gender="Female"
+            self.judge_gender="Male"
             self.case_number =""
             self.hearing_date=""
-            self.app_address_secret = True
+            # True when the applicant's address must not be disclosed to the respondent (FL401 q2.4 / C8)
+            self.app_address_secret = False
             self.hearing_date_object=datetime.now()
             self.listed_for="Interim Hearing"
             self.molestation_order =False
@@ -61,6 +62,7 @@ class CaseDetails:
             self.order_choices=[]
             self.directions=[]
             self.orders=[]
+            self.duration_orders=[]
             self.order_last=""
             self.effective=""
             self.application_values=[]
@@ -76,22 +78,34 @@ class CaseDetails:
         
             
     def reset(self):
+        # Clear everything belonging to the previous case so none of it carries into the next one
         self.children =[]
         self.relationship="Marriage"
-        self.court_name = 0
+        self.court_name = ""
         self.case_name=""
         self.judge_name = ""
-        self.judge_rank=0
+        self.judge_rank=""
         self.case_number =""
+        self.file_name=""
+        self.hearing_date=""
         self.hearing_date_object=datetime.now()
-        self.listed_for=0
-        self.application=0
+        self.listed_for=""
+        self.application=""
+        self.molestation_order=False
+        self.occupation_order=False
+        self.app_address_secret=False
         self.para_numbers=[]
         self.consent_order =False
         self.notice=''
-        self.reasons=0
-        self.listed_for=0
+        self.reasons=""
         self.judge_and_hearing=""
+        self.statements_read=[]
+        self.family_home_building_and_street=""
+        self.family_home_address_second_line=""
+        self.family_home_address_town_or_city=""
+        self.family_home_postcode=""
+        self.order_choices=[]
+        self.directions=[]
         self.applicant = Person('Applicant')
         self.app_rep=Person("Applicant's Representative")
         self.resp_rep=Person("Respondent's Representative")
@@ -102,8 +116,10 @@ class CaseDetails:
         self.recitals.clear()
         self.undertakings.clear()
         self.orders.clear()
+        self.duration_orders=[]
         self.order_last=""
         self.effective=""
+        self.notice_string=''
         self.applications_names=['Occupation Order','Non-Molestation Order','Occupation & Non-Molestation Orders']
         
    
